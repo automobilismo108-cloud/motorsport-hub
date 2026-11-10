@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Championship from "./components/Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
@@ -73,6 +73,25 @@ export default function Home() {
   const [destination, setDestination] = useState("");
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("motorsport-hub:workspace:v1");
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data.drivers)) setDrivers(data.drivers);
+        if (Array.isArray(data.moves)) setMoves(data.moves);
+      }
+    } catch (error) { console.error("Não foi possível carregar os dados salvos.", error); }
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    try { localStorage.setItem("motorsport-hub:workspace:v1", JSON.stringify({ drivers, moves })); }
+    catch (error) { console.error("Não foi possível salvar os dados.", error); }
+  }, [drivers, moves, storageReady]);
 
   const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
   const filteredDrivers = useMemo(() => drivers.filter(d =>
