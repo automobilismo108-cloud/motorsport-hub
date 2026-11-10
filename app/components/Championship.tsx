@@ -49,6 +49,7 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
   const [circuit,setCircuit]=useState("");
   const [raceDate,setRaceDate]=useState("");
   const [notice,setNotice]=useState("");
+  const [confirmReset,setConfirmReset]=useState(false);
 
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
@@ -88,6 +89,13 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
     setDraftResults({});
     setNotice(`${newRows.length} resultado(s) registrado(s). Classificações atualizadas.`);
   };
+  const resetAllResults=()=>{
+    setResults([]);
+    setDraftResults({});
+    setRaces(old=>old.map(r=>({...r,status:"Programada"})));
+    setConfirmReset(false);
+    setNotice("Todos os resultados foram apagados e as etapas voltaram para Programada.");
+  };
   const selectedRace=races.find(r=>r.id===Number(raceId));
   const raceResults=results.filter(r=>r.raceId===Number(raceId));
   const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
@@ -126,7 +134,7 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
         </div>
         <div className="result-bulk-footer"><span>Os pontos são calculados automaticamente conforme a posição.</span><button className="primary-button" disabled={filledCount===0} onClick={addResults}><Check size={16}/> Salvar {filledCount||""} resultado(s)</button></div>
       </div>
-      <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados desta etapa</h2><p>{selectedRace?.name??"Etapa selecionada"} · lançamentos já salvos</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{raceResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta etapa.</td></tr>:raceResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><b>{driverName(r.driverId)}</b></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
+      <div className="panel table-panel result-recorded-panel"><div className="panel-head result-recorded-heading"><div><h2>Resultados desta etapa</h2><p>{selectedRace?.name??"Etapa selecionada"} · lançamentos já salvos</p></div>{results.length>0&&<button type="button" className="danger-ghost-button" onClick={()=>setConfirmReset(true)}><Trash2 size={14}/> Limpar todos</button>}</div>{confirmReset&&<div className="reset-confirm"><span>Apagar todos os resultados de todas as etapas? Essa ação não pode ser desfeita.</span><div><button type="button" className="cancel-reset-button" onClick={()=>setConfirmReset(false)}>Cancelar</button><button type="button" className="confirm-reset-button" onClick={resetAllResults}>Sim, apagar tudo</button></div></div>}<div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{raceResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta etapa.</td></tr>:raceResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><b>{driverName(r.driverId)}</b></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
     </div>}
     <div className="champ-footnote"><Medal size={14}/> Pontuação padrão da corrida: 25–18–15–12–10–8–6–4–2–1. Sem ponto extra por volta mais rápida. Dados e resultados são locais neste protótipo e não representam resultados oficiais.</div>
   </div>;
