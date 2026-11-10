@@ -38,7 +38,7 @@ const initialRaces: Race[] = [
   {id:24,round:24,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
-export default function Championship({drivers,teams}:{drivers:Driver[];teams:Team[]}) {
+export default function Championship({drivers,teams,settingsOnly=false}:{drivers:Driver[];teams:Team[];settingsOnly?:boolean}) {
   const [tab,setTab]=useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces]=useState(initialRaces);
   const [results,setResults]=useState<Result[]>([]);
@@ -115,6 +115,15 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
   const raceResults=results.filter(r=>r.raceId===Number(raceId));
   const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
   const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
+
+  if(settingsOnly) return <div className="championship-module">
+    <div className="panel settings-reset-panel">
+      <div className="panel-head"><div><h2>Limpar resultados do campeonato</h2><p>Apaga os resultados lançados em todas as etapas e recalcula as classificações.</p></div><span className="settings-reset-icon"><Trash2 size={18}/></span></div>
+      <div className="settings-reset-content"><div><b>Resetar todos os resultados</b><p>O calendário, os pilotos e as equipes serão mantidos. Apenas resultados e pontuações serão apagados.</p></div><button type="button" className="settings-reset-button" onClick={()=>setConfirmReset(true)}><Trash2 size={15}/> Limpar todos os resultados</button></div>
+      {confirmReset&&<div className="reset-confirm"><span>Tem certeza? Todos os resultados de todas as etapas serão apagados. Esta ação não pode ser desfeita.</span><div><button type="button" className="cancel-reset-button" onClick={()=>setConfirmReset(false)}>Cancelar</button><button type="button" className="confirm-reset-button" onClick={resetAllResults}>Sim, apagar tudo</button></div></div>}
+    </div>
+    {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
+  </div>;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
