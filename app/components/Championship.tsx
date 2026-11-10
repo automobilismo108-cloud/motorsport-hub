@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
 type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
@@ -50,6 +50,21 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
   const [raceDate,setRaceDate]=useState("");
   const [notice,setNotice]=useState("");
   const [confirmReset,setConfirmReset]=useState(false);
+  const [storageReady,setStorageReady]=useState(false);
+
+  useEffect(()=>{
+    try {
+      const saved=localStorage.getItem("motorsport-hub:championship:f1:2026:v1");
+      if(saved){const data=JSON.parse(saved);if(Array.isArray(data.races))setRaces(data.races);if(Array.isArray(data.results))setResults(data.results);}
+    } catch(error){console.error("Não foi possível carregar os dados do campeonato.",error);}
+    setStorageReady(true);
+  },[]);
+
+  useEffect(()=>{
+    if(!storageReady)return;
+    try{localStorage.setItem("motorsport-hub:championship:f1:2026:v1",JSON.stringify({races,results}));}
+    catch(error){console.error("Não foi possível salvar os dados do campeonato.",error);}
+  },[races,results,storageReady]);
 
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
