@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Championship from "./components/Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
@@ -103,7 +104,7 @@ export default function Home() {
         <div className="nav-caption">WORKSPACE</div>
         <nav>{nav.map(item=><button key={item.label} className={`nav-item ${section===item.label?"active":""}`} onClick={()=>{setSection(item.label);setMobileMenu(false)}}><item.icon size={18}/>{item.label}{item.label==="Mercado"&&<span className="nav-count">{moves.length}</span>}</button>)}</nav>
         <div className="nav-caption second">GERENCIAMENTO</div>
-        <button className="nav-item" onClick={()=>setNotice("Módulo de campeonatos: em breve.")}><Trophy size={18}/>Campeonatos</button>
+        <button className={`nav-item ${section==="Campeonatos"?"active":""}`} onClick={()=>{setSection("Campeonatos");setMobileMenu(false)}}><Trophy size={18}/>Campeonatos</button>
         <button className="nav-item" onClick={()=>setNotice("Configurações: em breve.")}><Settings size={18}/>Configurações</button>
         <div className="sidebar-bottom"><div className="avatar">MH</div><div><b>Administrador</b><span>Workspace pessoal</span></div><ChevronDown size={15}/></div>
       </aside>
@@ -113,8 +114,9 @@ export default function Home() {
 
         <div className="content">
           {notice && <div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / F1 2026</div><h1>{section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":"Acompanhe movimentações e simule o mercado de pilotos."}</p></div><button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button></div>
+          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / F1 2026</div><h1>{section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?"Classificação, calendário e resultados da temporada.":"Acompanhe movimentações e simule o mercado de pilotos."}</p></div><button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button></div>
 
+          {section==="Campeonatos" && <Championship drivers={drivers} teams={teams}/>}
           {section==="Visão geral" && <>
             <div className="stats-grid">
               <Stat icon={<Users/>} label="Pilotos cadastrados" value={String(drivers.length).padStart(2,"0")} foot="Grid da temporada 2026" tone="orange"/>
