@@ -43,9 +43,7 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
   const [races,setRaces]=useState(initialRaces);
   const [results,setResults]=useState<Result[]>([]);
   const [raceId,setRaceId]=useState("1");
-  const [driverId,setDriverId]=useState("");
-  const [position,setPosition]=useState("1");
-  const [resultStatus,setResultStatus]=useState("Classificado");
+  const [draftResults,setDraftResults]=useState<Record<string,{position:string;status:string}>>({});
   const [showRace,setShowRace]=useState(false);
   const [raceName,setRaceName]=useState("");
   const [circuit,setCircuit]=useState("");
@@ -67,18 +65,30 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
     setRaces(old=>[...old,{id:Date.now(),round:next,name:raceName.trim(),circuit:circuit.trim(),date:raceDate,status:"Programada"}]);
     setRaceName("");setCircuit("");setRaceDate("");setShowRace(false);setNotice("Etapa adicionada ao calendário.");
   };
-  const addResult=()=>{
-    const selected=drivers.find(d=>d.id===driverId);
-    if(!selected||!raceId)return;
-    if(results.some(r=>r.raceId===Number(raceId)&&r.driverId===driverId)){setNotice("Este piloto já possui resultado nesta etapa.");return;}
-    const pos=resultStatus==="Abandono"||resultStatus==="Desclassificado"?null:Number(position);
-    const points=pos&&pos<=10?POINTS[pos-1]:0;
-    setResults(old=>[...old,{id:Date.now(),raceId:Number(raceId),driverId,position:pos,points,status:resultStatus}]);
-    setRaces(old=>old.map(r=>r.id===Number(raceId)?{...r,status:"Concluída"}:r));
-    setNotice("Resultado registrado e classificação atualizada.");
-    setDriverId("");
+  const updateDraft=(id:string,field:"position"|"status",value:string)=>{
+    setDraftResults(old=>({...old,[id]:{position:old[id]?.position??"",status:old[id]?.status??"Classificado",[field]:value}}));
   };
-  const selectedRace=races.find(r=>r.id===Number(raceId));
+  const addResults=()=>{
+    const already=results.filter(r=>r.raceId===Number(raceId)).map(r=>r.driverId);
+    const entries=drivers.filter(d=>!already.includes(d.id)).map(d=>({driver:d,draft:draftResults[d.id]})).filter(x=>x.draft&&(x.draft.position!==""||x.draft.status!=="Classificado"));
+    if(entries.length===0){setNotice("Preencha a posição ou a situação de pelo menos um piloto.");return;}
+    const usedPositions=new Set<number>();
+    for(const item of entries){
+      const pos=item.draft!.position===""?null:Number(item.draft!.position);
+      if(pos!==null&&usedPositions.has(pos)){setNotice("Há posições repetidas. Cada posição de chegada deve ser única.");return;}
+      if(pos!==null)usedPositions.add(pos);
+    }
+    const newRows:Result[]=entries.map(({driver,draft})=>{
+      const pos=draft!.status==="Abandono"||draft!.status==="Desclassificado"||draft!.status==="Não largou"?null:Number(draft!.position);
+      const points=draft!.status==="Classificado"&&pos&&pos<=10?POINTS[pos-1]:0;
+      return {id:Date.now()+Math.floor(Math.random()*100000),raceId:Number(raceId),driverId:driver.id,position:pos,points,status:draft!.status};
+    });
+    setResults(old=>[...old,...newRows]);
+    setRaces(old=>old.map(r=>r.id===Number(raceId)?{...r,status:"Concluída"}:r));
+    setDraftResults({});
+    setNotice(`${newRows.length} resultado(s) registrado(s). Classificações atualizadas.`);
+  };
+  const selectedRace=races.find(r=>r.id===Number(raceId));\n  const raceResults=results.filter(r=>r.raceId===Number(raceId));\n  const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));\n  const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
@@ -97,9 +107,23 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
       <div className="table-wrap"><table><thead><tr><th>RODADA</th><th>GRANDE PRÊMIO</th><th>CIRCUITO</th><th>DATA</th><th>STATUS</th></tr></thead><tbody>{races.slice().sort((a,b)=>a.round-b.round).map(r=><tr key={r.id}><td><b>R{String(r.round).padStart(2,"0")}</b></td><td><b>{r.name}</b></td><td>{r.circuit}</td><td>{r.date||"A definir"}</td><td><span className={r.status==="Concluída"?"status-tag":"race-pending"}>{r.status}</span></td></tr>)}</tbody></table></div>
       <div className="market-note"><Flag size={15}/><span>Baseado no calendário original divulgado pela FIA em 09/06/2025. Inclui Bahrain (10–12 abr) e Arábia Saudita (17–19 abr), posteriormente cancelados. As datas de Azerbaijão foram mantidas no fim de semana originalmente anunciado (25–27 set); confira a programação oficial antes de usar como agenda operacional.</span></div>
     </div>}
-    {tab==="resultados"&&<div className="champ-results-grid">
-      <div className="panel result-entry"><div className="panel-head"><div><h2>Registrar resultado</h2><p>Informe a chegada de cada piloto para atualizar os pontos.</p></div></div><div className="result-fields"><label>ETAPA<select value={raceId} onChange={e=>setRaceId(e.target.value)}>{races.map(r=><option key={r.id} value={r.id}>{r.name} — {r.circuit}</option>)}</select></label><label>PILOTO<select value={driverId} onChange={e=>setDriverId(e.target.value)}><option value="">Selecione o piloto</option>{drivers.map(d=><option key={d.id} value={d.id}>{d.name} · {teamName(d.teamId)}</option>)}</select></label><div className="result-two"><label>POSIÇÃO<select value={position} onChange={e=>setPosition(e.target.value)}>{Array.from({length:22},(_,i)=><option key={i+1} value={i+1}>{i+1}º</option>)}</select></label><label>SITUAÇÃO<select value={resultStatus} onChange={e=>setResultStatus(e.target.value)}><option>Classificado</option><option>Abandono</option><option>Desclassificado</option></select></label></div><div className="points-preview">PONTOS PREVISTOS <b>{resultStatus==="Classificado"&&Number(position)<=10?POINTS[Number(position)-1]:0} PTS</b></div><button className="primary-button" disabled={!driverId||!selectedRace} onClick={addResult}><Check size={16}/> Registrar resultado</button></div></div>
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Últimos resultados</h2><p>Registros lançados nesta demonstração</p></div></div><div className="table-wrap"><table><thead><tr><th>ETAPA</th><th>PILOTO</th><th>POS.</th><th>PTS</th></tr></thead><tbody>{results.length===0?<tr><td colSpan={4} className="empty-state">Nenhum resultado registrado ainda.</td></tr>:results.slice().reverse().map(r=><tr key={r.id}><td>{races.find(x=>x.id===r.raceId)?.name??"Etapa"}</td><td><b>{driverName(r.driverId)}</b></td><td>{r.position? r.position+"º":r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
+    {tab==="resultados"&&<div className="champ-results-workspace">
+      <div className="panel result-entry">
+        <div className="panel-head result-panel-heading"><div><h2>Lançar classificação da etapa</h2><p>Selecione o GP e preencha a chegada de vários pilotos de uma só vez.</p></div><span className="status-tag">{raceResults.length} REGISTRADOS</span></div>
+        <div className="result-event-picker"><label>ETAPA DA TEMPORADA<select value={raceId} onChange={e=>{setRaceId(e.target.value);setDraftResults({});}}>{races.slice().sort((a,b)=>a.round-b.round).map(r=><option key={r.id} value={r.id}>R{String(r.round).padStart(2,"0")} · {r.name} — {r.circuit}</option>)}</select></label><div className="result-event-meta"><span>{selectedRace?.date||"Data a definir"}</span><span>{remainingDrivers.length} pilotos pendentes</span></div></div>
+        <div className="result-bulk-toolbar"><div><b>Ordem de chegada</b><small>Deixe em branco quem ainda não deseja registrar.</small></div><span>{filledCount} preenchidos</span></div>
+        <div className="result-driver-list">
+          {remainingDrivers.map(d=>{const draft=draftResults[d.id]??{position:"",status:"Classificado"};const points=draft.status==="Classificado"&&draft.position!==""&&Number(draft.position)<=10?POINTS[Number(draft.position)-1]:0;return <div className="result-driver-row" key={d.id}>
+            <div className="result-driver-identity"><span className="driver-number">{d.number}</span><div><b>{d.name}</b><small>{teamName(d.teamId)}</small></div></div>
+            <label className="result-position-field"><span>POSIÇÃO</span><select value={draft.position} onChange={e=>updateDraft(d.id,"position",e.target.value)}><option value="">—</option>{Array.from({length:22},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}º</option>)}</select></label>
+            <label className="result-status-field"><span>SITUAÇÃO</span><select value={draft.status} onChange={e=>updateDraft(d.id,"status",e.target.value)}><option>Classificado</option><option>Abandono</option><option>Desclassificado</option><option>Não largou</option></select></label>
+            <b className="result-row-points">{points} <small>PTS</small></b>
+          </div>})}
+          {remainingDrivers.length===0&&<div className="all-results-done"><Check size={17}/> Todos os pilotos já possuem resultado nesta etapa.</div>}
+        </div>
+        <div className="result-bulk-footer"><span>Os pontos são calculados automaticamente conforme a posição.</span><button className="primary-button" disabled={filledCount===0} onClick={addResults}><Check size={16}/> Salvar {filledCount||""} resultado(s)</button></div>
+      </div>
+      <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados desta etapa</h2><p>{selectedRace?.name??"Etapa selecionada"} · lançamentos já salvos</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{raceResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta etapa.</td></tr>:raceResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><b>{driverName(r.driverId)}</b></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
     </div>}
     <div className="champ-footnote"><Medal size={14}/> Pontuação padrão da corrida: 25–18–15–12–10–8–6–4–2–1. Sem ponto extra por volta mais rápida. Dados e resultados são locais neste protótipo e não representam resultados oficiais.</div>
   </div>;
