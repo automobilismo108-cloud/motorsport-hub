@@ -88,7 +88,10 @@ export default function Championship({drivers,teams}:{drivers:Driver[];teams:Tea
     setDraftResults({});
     setNotice(`${newRows.length} resultado(s) registrado(s). Classificações atualizadas.`);
   };
-  const selectedRace=races.find(r=>r.id===Number(raceId));\n  const raceResults=results.filter(r=>r.raceId===Number(raceId));\n  const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));\n  const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
+  const selectedRace=races.find(r=>r.id===Number(raceId));
+  const raceResults=results.filter(r=>r.raceId===Number(raceId));
+  const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
+  const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
