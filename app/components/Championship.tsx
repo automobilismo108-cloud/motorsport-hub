@@ -28,7 +28,7 @@ const initialRaces: Race[] = [
   {id:14,round:14,name:"GP dos Países Baixos",circuit:"Circuit Zandvoort",date:"21–23 ago 2026",status:"Programada"},
   {id:15,round:15,name:"GP da Itália",circuit:"Autodromo Nazionale Monza",date:"04–06 set 2026",status:"Programada"},
   {id:16,round:16,name:"GP da Espanha",circuit:"Madring — Madrid",date:"11–13 set 2026",status:"Programada"},
-  {id:17,round:17,name:"GP do Azerbaijão",circuit:"Baku City Circuit",date:"25–27 set 2026",status:"Programada"},
+  {id:17,round:17,name:"GP do Azerbaijão",circuit:"Baku City Circuit",date:"24–26 set 2026",status:"Programada"},
   {id:18,round:18,name:"GP de Singapura",circuit:"Marina Bay Street Circuit",date:"09–11 out 2026",status:"Programada"},
   {id:19,round:19,name:"GP dos Estados Unidos",circuit:"Circuit of The Americas — Austin",date:"23–25 out 2026",status:"Programada"},
   {id:20,round:20,name:"GP da Cidade do México",circuit:"Autódromo Hermanos Rodríguez",date:"30 out–01 nov 2026",status:"Programada"},
