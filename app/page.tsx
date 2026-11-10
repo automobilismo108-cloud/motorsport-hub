@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Championship from "./components/Championship";
 import {
-  Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, CarFront,
+  Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
   Plus, Search, Settings, Shield, Trophy, Users, X, Check, Zap
 } from "lucide-react";
@@ -51,6 +51,10 @@ const initialDrivers: Driver[] = [
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
 ];
 
+const registeredChampionships = [
+  { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
+];
+
 const initialMoves: Move[] = [
   {id:1,driver:"Isack Hadjar",from:"Racing Bulls",to:"Red Bull Racing",date:"2026",status:"Concluída"},
   {id:2,driver:"Arvid Lindblad",from:"Fórmula 2",to:"Racing Bulls",date:"2026",status:"Concluída"},
@@ -59,6 +63,7 @@ const initialMoves: Move[] = [
 
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
+  const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
   const [drivers, setDrivers] = useState(initialDrivers);
   const [teams] = useState(initialTeams);
   const [moves, setMoves] = useState(initialMoves);
@@ -102,9 +107,9 @@ export default function Home() {
         <div className="brand"><div className="brand-mark"><Flag size={21}/></div><div><b>MOTORSPORT</b><span>HUB <i>2026</i></span></div><button className="close-menu" onClick={()=>setMobileMenu(false)}><X/></button></div>
         <div className="workspace"><span className="live-dot"/> TEMPORADA ATIVA <b>2026</b></div>
         <div className="nav-caption">WORKSPACE</div>
-        <nav>{nav.map(item=><button key={item.label} className={`nav-item ${section===item.label?"active":""}`} onClick={()=>{setSection(item.label);setMobileMenu(false)}}><item.icon size={18}/>{item.label}{item.label==="Mercado"&&<span className="nav-count">{moves.length}</span>}</button>)}</nav>
+        <nav>{nav.map(item=><button key={item.label} className={`nav-item ${section===item.label?"active":""}`} onClick={()=>{setSection(item.label);setSelectedChampionship(null);setMobileMenu(false)}}><item.icon size={18}/>{item.label}{item.label==="Mercado"&&<span className="nav-count">{moves.length}</span>}</button>)}</nav>
         <div className="nav-caption second">GERENCIAMENTO</div>
-        <button className={`nav-item ${section==="Campeonatos"?"active":""}`} onClick={()=>{setSection("Campeonatos");setMobileMenu(false)}}><Trophy size={18}/>Campeonatos</button>
+        <button className={`nav-item ${section==="Campeonatos"?"active":""}`} onClick={()=>{setSection("Campeonatos");setSelectedChampionship(null);setMobileMenu(false)}}><Trophy size={18}/>Campeonatos</button>
         <button className="nav-item" onClick={()=>setNotice("Configurações: em breve.")}><Settings size={18}/>Configurações</button>
         <div className="sidebar-bottom"><div className="avatar">MH</div><div><b>Administrador</b><span>Workspace pessoal</span></div><ChevronDown size={15}/></div>
       </aside>
@@ -114,9 +119,10 @@ export default function Home() {
 
         <div className="content">
           {notice && <div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / F1 2026</div><h1>{section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?"Classificação, calendário e resultados da temporada.":"Acompanhe movimentações e simule o mercado de pilotos."}</p></div><button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button></div>
+          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / {section==="Campeonatos" ? (selectedChampionship ? "CAMPEONATO SELECIONADO" : "CENTRAL DE CAMPEONATOS") : "F1 2026"}</div><h1>{section==="Campeonatos" && selectedChampionship ? registeredChampionships.find(c=>c.id===selectedChampionship)?.name : section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?(selectedChampionship?"Gerencie classificação, calendário e resultados deste campeonato.":"Selecione um campeonato para acessar sua área de gerenciamento."):"Acompanhe movimentações e simule o mercado de pilotos."}</p></div>{section!=="Campeonatos" && <button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button>}</div>
 
-          {section==="Campeonatos" && <Championship drivers={drivers} teams={teams}/>}
+          {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
+          {section==="Campeonatos" && selectedChampionship==="f1" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Championship drivers={drivers} teams={teams}/></>}
           {section==="Visão geral" && <>
             <div className="stats-grid">
               <Stat icon={<Users/>} label="Pilotos cadastrados" value={String(drivers.length).padStart(2,"0")} foot="Grid da temporada 2026" tone="orange"/>
