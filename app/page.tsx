@@ -70,6 +70,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
+  const [profileDriverId, setProfileDriverId] = useState<string | null>(null);
   const [destination, setDestination] = useState("");
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -94,6 +95,8 @@ export default function Home() {
   }, [drivers, moves, storageReady]);
 
   const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
+  const openDriverProfile = (id: string) => setProfileDriverId(id);
+  const profileDriver = drivers.find(d => d.id === profileDriverId);
   const filteredDrivers = useMemo(() => drivers.filter(d =>
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -142,7 +145,16 @@ export default function Home() {
 
           {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
           {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} settingsOnly={section==="Configurações"}/></>}
-          {section==="Visão geral" && <>
+          {profileDriver && <div className="driver-profile-page">
+            <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><ArrowLeft size={15}/> Voltar</button>
+            <div className="panel driver-profile-hero">
+              <div className="driver-profile-number">#{profileDriver.number}</div>
+              <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · {teamName(profileDriver.teamId)} · {profileDriver.status}</p></div>
+              <span className="status-tag">TEMPORADA 2026</span>
+            </div>
+            <div className="panel driver-profile-placeholder"><Users size={25}/><h3>Ficha completa em preparação</h3><p>Este espaço está reservado para a ficha completa do piloto: estatísticas, carreira, contratos, resultados, histórico e informações pessoais.</p><span>PERFIL DO PILOTO · {profileDriver.name.toUpperCase()}</span></div>
+          </div>}
+          {!profileDriver && section==="Visão geral" && <>
             <div className="stats-grid">
               <Stat icon={<Users/>} label="Pilotos cadastrados" value={String(drivers.length).padStart(2,"0")} foot="Grid da temporada 2026" tone="orange"/>
               <Stat icon={<Shield/>} label="Equipes" value="11" foot="Construtores inscritos" tone="blue"/>
@@ -154,17 +166,17 @@ export default function Home() {
                 <div className="team-list">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="team-row" key={t.id}><div className="team-stripe" style={{background:t.color}}/><div className="team-monogram" style={{color:t.color}}>{t.short}</div><div className="team-info"><b>{t.name}</b><span>{ds.map(d=>d.name).join(" · ")||"Nenhum piloto titular"}</span></div><div className="seat-count">{ds.length}/2 <span>vagas</span></div></div>})}</div>
               </div>
               <div className="panel activity-panel"><div className="panel-head"><div><h2>Mercado recente</h2><p>Últimas movimentações registradas</p></div><Activity size={17} className="muted-icon"/></div>
-                <div className="activity-list">{moves.slice(0,5).map(m=><div className="activity-item" key={m.id}><div className="activity-icon"><ArrowLeftRight size={16}/></div><div className="activity-copy"><b>{m.driver}</b><span>{m.from} <ArrowUpRight size={11}/> {m.to}</span><small>{m.date}</small></div><span className="status-tag">{m.status}</span></div>)}</div>
+                <div className="activity-list">{moves.slice(0,5).map(m=><div className="activity-item" key={m.id}><div className="activity-icon"><ArrowLeftRight size={16}/></div><div className="activity-copy"><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button><span>{m.from} <ArrowUpRight size={11}/> {m.to}</span><small>{m.date}</small></div><span className="status-tag">{m.status}</span></div>)}</div>
                 <button className="wide-ghost" onClick={()=>setSection("Mercado")}>Abrir mercado <ArrowUpRight size={14}/></button>
               </div>
             </div>
           </>}
 
-          {section==="Pilotos" && <div className="panel table-panel"><div className="panel-head"><div><h2>Todos os pilotos</h2><p>{filteredDrivers.length} registros encontrados</p></div><div className="search-box"><Search size={16}/><input placeholder="Buscar piloto ou equipe..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>Nº</th><th>EQUIPE</th><th>STATUS</th></tr></thead><tbody>{filteredDrivers.map(d=><tr key={d.id}><td><b>{d.name}</b></td><td>{d.country}</td><td>#{d.number}</td><td><span className="team-cell"><i style={{background:teams.find(t=>t.id===d.teamId)?.color}}/>{teamName(d.teamId)}</span></td><td><span className="status-tag">Titular</span></td></tr>)}</tbody></table></div></div>}
+          {!profileDriver && section==="Pilotos" && <div className="panel table-panel"><div className="panel-head"><div><h2>Todos os pilotos</h2><p>{filteredDrivers.length} registros encontrados</p></div><div className="search-box"><Search size={16}/><input placeholder="Buscar piloto ou equipe..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>Nº</th><th>EQUIPE</th><th>STATUS</th></tr></thead><tbody>{filteredDrivers.map(d=><tr key={d.id}><td><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button></td><td>{d.country}</td><td>#{d.number}</td><td><span className="team-cell"><i style={{background:teams.find(t=>t.id===d.teamId)?.color}}/>{teamName(d.teamId)}</span></td><td><span className="status-tag">Titular</span></td></tr>)}</tbody></table></div></div>}
 
-          {section==="Equipes" && <div className="team-cards">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="panel team-card" key={t.id}><div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div><h3>{t.name}</h3><div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><b>{d.name}</b></div>)}</div><div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div></div>})}</div>}
+          {!profileDriver && section==="Equipes" && <div className="team-cards">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="panel team-card" key={t.id}><div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div><h3>{t.name}</h3><div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button></div>)}</div><div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div></div>})}</div>}
 
-          {section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Movimentações reais de referência e simulações locais</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><b>{m.driver}</b></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>As transferências criadas nesta demonstração alteram o grid apenas no navegador. A persistência no banco será ligada na próxima etapa.</span></div></div>}
+          {!profileDriver && section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Movimentações reais de referência e simulações locais</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>As transferências criadas nesta demonstração alteram o grid apenas no navegador. A persistência no banco será ligada na próxima etapa.</span></div></div>}
           <footer> MOTORSPORT HUB <span>•</span> DADOS DE REFERÊNCIA: TEMPORADA 2026 <span>•</span> PROTÓTIPO 0.1</footer>
         </div>
       </section>
