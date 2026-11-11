@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
+import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
 import Formula2Championship from "./components/Formula2Championship";
 import Formula3Championship from "./components/Formula3Championship";
@@ -118,6 +119,7 @@ export default function Home() {
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
+  const [development,,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
@@ -134,7 +136,9 @@ export default function Home() {
   const profileDriver = drivers.find(d => d.id === profileDriverId);
   const profileTeam = teams.find(t => t.id === profileTeamId);
   const profileTeamDrivers = profileTeam ? drivers.filter(d => d.teamId === profileTeam.id) : [];
-  const profileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const profileDevelopment = profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined;
+  const profileDetails = profileDevelopment && baseProfileDetails ? { ...baseProfileDetails, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
@@ -166,8 +170,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError || licenseError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError}</div>;
-  if (!driversReady || !movesReady || !licenseReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (driversError || movesError || licenseError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError}</div>;
+  if (!driversReady || !movesReady || !licenseReady || !developmentReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
@@ -190,7 +194,7 @@ export default function Home() {
           <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / {section==="Campeonatos" ? (selectedChampionship ? "CAMPEONATO SELECIONADO" : "CENTRAL DE CAMPEONATOS") : "F1 2026"}</div><h1>{section==="Campeonatos" && selectedChampionship ? registeredChampionships.find(c=>c.id===selectedChampionship)?.name : section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?(selectedChampionship?"Gerencie classificação, calendário e resultados deste campeonato.":"Selecione um campeonato para acessar sua área de gerenciamento."):"Acompanhe movimentações e simule o mercado de pilotos."}</p></div>{section!=="Campeonatos" && <button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button>}</div>
 
           {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
-          {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} settingsOnly={section==="Configurações"}/></>}
+          {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} driverDetails={driverDetails} settingsOnly={section==="Configurações"}/></>}
           {section==="Campeonatos" && selectedChampionship==="f2" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula2Championship/></>}
           {section==="Campeonatos" && selectedChampionship==="f3" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula3Championship/></>}
           {profileDriver && <div className="driver-profile-page">
@@ -204,6 +208,15 @@ export default function Home() {
               <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
               <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
               <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDetails?.contractUntil ? `Até o fim de ${profileDetails.contractUntil}` : "Não divulgado"}</b></div>
+            </div>
+            <div className="panel driver-attributes-panel">
+              <div className="panel-head"><div><h2>Desenvolvimento do piloto</h2><p>Evolução automática ao final de cada temporada</p></div><span className="status-tag">POTENCIAL {profileDevelopment?.potential ?? "—"}/100</span></div>
+              <div className="driver-facts-grid">
+                <div className="panel driver-fact"><span>POTENCIAL</span><b>{profileDevelopment?.potential ?? "—"} / 100</b></div>
+                <div className="panel driver-fact"><span>EVOLUÇÃO RECENTE</span><b>{profileDevelopment?.history.at(-1)?.change > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
+                <div className="panel driver-fact"><span>TEMPORADAS REGISTRADAS</span><b>{profileDevelopment?.history.length ?? 0}</b></div>
+              </div>
+              <div className="driver-attributes-list">{profileDevelopment?.history.slice().reverse().map((item,index)=><div className="driver-attribute-row" key={`${item.category}-${item.season}-${index}`}><div><b>{item.season} · {item.category}</b><strong>{item.change>0?"+":""}{item.change}</strong></div><small>Posição final: {item.position}º · Média {item.overallBefore} → {item.overallAfter}</small></div>)}</div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos das temporadas {ACTIVE_SEASON-2}–{ACTIVE_SEASON}</p></div><span className="status-tag">{profileHasLegacyF1Seat?"GRID ATUAL · TRANSIÇÃO":profileLicenseEligible?"LICENCIADO":"NÃO ELEGÍVEL"}</span></div>
