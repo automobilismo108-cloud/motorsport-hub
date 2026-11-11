@@ -11,10 +11,10 @@ export function useCloudState<T>(
   initialValue: T,
   legacyStorageKey?: string,
   selectLegacy?: (legacy: any) => T | undefined,
-): [T, Dispatch<SetStateAction<T>>, boolean] {
+): [T, Dispatch<SetStateAction<T>>, boolean, string | null] {
   const { user } = useAuth();
   const [value, setValue] = useState<T>(initialValue);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(false);\n  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,5 +74,5 @@ export function useCloudState<T>(
     void save();
   }, [value, ready, user?.id, dataKey]);
 
-  return [value, setValue, ready];
+  return [value, setValue, ready, syncError];
 }
