@@ -118,6 +118,7 @@ export default function Home() {
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
+  const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
