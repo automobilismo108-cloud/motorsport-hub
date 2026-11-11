@@ -192,6 +192,7 @@ export default function Home() {
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",INITIAL_FREE_AGENT_POOL.development);
   const [search, setSearch] = useState("");
   const [pilotsCategory,setPilotsCategory] = useState<"F1"|"F2"|"F3">("F1");
+  const [teamsCategory,setTeamsCategory] = useState<"F1"|"F2"|"F3">("F1");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [profileDriverId, setProfileDriverId] = useState<string | null>(null);
@@ -444,7 +445,23 @@ export default function Home() {
             <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos contratados — {pilotsCategory==="F1"?"Fórmula 1":pilotsCategory==="F2"?"Fórmula 2":"Fórmula 3"}</h2><p>{filteredDrivers.length} pilotos no elenco da próxima temporada</p></div><div className="search-box"><Search size={16}/><input placeholder="Buscar piloto ou equipe..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>Nº</th><th>EQUIPE</th><th>STATUS</th></tr></thead><tbody>{filteredDrivers.map(d=><tr key={d.id}><td>{pilotsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button>:<b>{d.name}</b>}</td><td>{d.country}</td><td>#{d.number}</td><td><span className="team-cell"><i style={{background:(pilotsCategory==="F1"?teams:pilotsCategory==="F2"?f2Teams:f3Teams).find(t=>t.id===d.teamId)?.color}}/>{pilotsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(d.teamId)}>{d.teamLabel}</button>:d.teamLabel}</span></td><td><span className="status-tag">{pilotsCategory==="F1"?(d.status==="Reserva"?"Reserva":"Titular"):"Contratado"}</span></td></tr>)}</tbody></table></div></div>
           </>}
 
-          {!profileDriver && !profileTeam && section==="Equipes" && <div className="team-cards">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id && d.status!=="Transferido" && d.status!=="Aposentado");return <div className="panel team-card" key={t.id}><div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div><h3><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button></h3><div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button></div>)}</div><div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div></div>})}</div>}
+          {!profileDriver && !profileTeam && section==="Equipes" && <>
+            <div className="champ-tabs pilots-category-tabs">
+              <button className={teamsCategory==="F1"?"selected":""} onClick={()=>setTeamsCategory("F1")}>Fórmula 1</button>
+              <button className={teamsCategory==="F2"?"selected":""} onClick={()=>setTeamsCategory("F2")}>Fórmula 2</button>
+              <button className={teamsCategory==="F3"?"selected":""} onClick={()=>setTeamsCategory("F3")}>Fórmula 3</button>
+            </div>
+            <div className="team-cards">{(teamsCategory==="F1"?teams:teamsCategory==="F2"?f2Teams:f3Teams).map(t=>{
+              const roster=teamsCategory==="F1"?drivers:teamsCategory==="F2"?f2Drivers:f3Drivers;
+              const ds=roster.filter(d=>d.teamId===t.id && d.status!=="Transferido" && d.status!=="Aposentado");
+              return <div className="panel team-card" key={teamsCategory+"-"+t.id}>
+                <div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div>
+                <h3>{teamsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button>:t.name}</h3>
+                <div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span>{teamsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button>:<b>{d.name}</b>}</div>)}{ds.length===0&&<div className="empty-team-roster">Nenhum piloto contratado</div>}</div>
+                <div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div>
+              </div>
+            })}</div>
+          </>}
 
           {!profileDriver && !profileTeam && section==="Mercado" && <>
             <div className="champ-tabs market-tabs">
