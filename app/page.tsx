@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 type Team = { id: string; name: string; color: string; short: string };
-type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string; category?: string };
 
 const initialTeams: Team[] = [
@@ -138,7 +138,7 @@ export default function Home() {
   const openTeamProfile = (id: string) => { setProfileDriverId(null); setProfileTeamId(id); };
   const profileDriver = drivers.find(d => d.id === profileDriverId);
   const profileTeam = teams.find(t => t.id === profileTeamId);
-  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.teamId === profileTeam.id) : [];
+  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.teamId === profileTeam.id) : [];
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined;
   const profileDetails = profileDevelopment && baseProfileDetails ? { ...baseProfileDetails, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
@@ -147,14 +147,14 @@ export default function Home() {
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
   const profileHasLegacyF1Seat = !!profileDriver && getLegacyF1LicenseId(profileDriver.id) !== null;
   const profileLicenseEligible = profileHasLegacyF1Seat || profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
-  const filteredDrivers = useMemo(() => drivers.filter(d =>
+  const filteredDrivers = useMemo(() => drivers.filter(d => d.status!=="Transferido" &&
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
 
   const allMarketDrivers = [
-    ...drivers.map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
-    ...f2Drivers.map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
-    ...f3Drivers.map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
+    ...drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
+    ...f2Drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
+    ...f3Drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
   ];
   const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
     (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
@@ -176,9 +176,9 @@ export default function Home() {
       if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
       if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
     } else {
-      if(sourceCategory==="F1") setDrivers(old=>old.filter(d=>d.id!==sourceId));
-      if(sourceCategory==="F2") setF2Drivers(old=>old.filter(d=>d.id!==sourceId));
-      if(sourceCategory==="F3") setF3Drivers(old=>old.filter(d=>d.id!==sourceId));
+      if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
+      if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
+      if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
       const base = {licenseId:driver.licenseId ?? "driver:"+driver.name.toLowerCase().replace(/[^a-z0-9]+/g,"-"),name:driver.name,country:driver.country,number:driver.number,teamId:target.id};
       if(destinationCategory==="F1") setDrivers(old=>[...old,{...base,id:"transfer-"+base.licenseId.replace("driver:",""),status:"Titular"}]);
       if(destinationCategory==="F2") setF2Drivers(old=>[...old,{...base,id:"f2-transfer-"+base.licenseId.replace("driver:","")}]);
@@ -285,14 +285,14 @@ export default function Home() {
           </div>}
           {!profileDriver && !profileTeam && section==="Visão geral" && <>
             <div className="stats-grid">
-              <Stat icon={<Users/>} label="Pilotos cadastrados" value={String(drivers.length).padStart(2,"0")} foot="Grid da temporada 2026" tone="orange"/>
+              <Stat icon={<Users/>} label="Pilotos cadastrados" value={String(drivers.filter(d=>d.status!=="Transferido").length).padStart(2,"0")} foot="Grid da temporada 2026" tone="orange"/>
               <Stat icon={<Shield/>} label="Equipes" value="11" foot="Construtores inscritos" tone="blue"/>
               <Stat icon={<ArrowLeftRight/>} label="Movimentações" value={String(moves.length).padStart(2,"0")} foot="No histórico do sistema" tone="green"/>
-              <Stat icon={<Gauge/>} label="Vagas titulares" value={String(Math.max(0,22-drivers.length)).padStart(2,"0")} foot="Limite de 2 por equipe" tone="purple"/>
+              <Stat icon={<Gauge/>} label="Vagas titulares" value={String(Math.max(0,22-drivers.filter(d=>d.status!=="Transferido").length)).padStart(2,"0")} foot="Limite de 2 por equipe" tone="purple"/>
             </div>
             <div className="dashboard-grid">
               <div className="panel roster-panel"><div className="panel-head"><div><h2>Grid da temporada</h2><p>Composição atual das equipes</p></div><button className="text-button" onClick={()=>setSection("Equipes")}>Ver equipes <ArrowUpRight size={14}/></button></div>
-                <div className="team-list">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="team-row" key={t.id}><div className="team-stripe" style={{background:t.color}}/><div className="team-monogram" style={{color:t.color}}>{t.short}</div><div className="team-info"><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button><span>{ds.map(d=>d.name).join(" · ")||"Nenhum piloto titular"}</span></div><div className="seat-count">{ds.length}/2 <span>vagas</span></div></div>})}</div>
+                <div className="team-list">{teams.map(t=>{const ds=drivers.filter(d=>d.status!=="Transferido" && d.teamId===t.id);return <div className="team-row" key={t.id}><div className="team-stripe" style={{background:t.color}}/><div className="team-monogram" style={{color:t.color}}>{t.short}</div><div className="team-info"><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button><span>{ds.map(d=>d.name).join(" · ")||"Nenhum piloto titular"}</span></div><div className="seat-count">{ds.length}/2 <span>vagas</span></div></div>})}</div>
               </div>
               <div className="panel activity-panel"><div className="panel-head"><div><h2>Mercado recente</h2><p>Últimas movimentações registradas</p></div><Activity size={17} className="muted-icon"/></div>
                 <div className="activity-list">{moves.slice(0,5).map(m=><div className="activity-item" key={m.id}><div className="activity-icon"><ArrowLeftRight size={16}/></div><div className="activity-copy"><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button><span>{m.from} <ArrowUpRight size={11}/> {m.to}</span><small>{m.date}</small></div><span className="status-tag">{m.status}</span></div>)}</div>
