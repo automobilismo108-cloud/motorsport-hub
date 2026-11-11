@@ -6,8 +6,8 @@ import { useCloudState } from "@/lib/useCloudState";
 import { useTransferMarketState, type TransferDriver } from "@/lib/useTransferMarketState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
-import Formula2Championship, { initialF2Drivers, f2Teams, type Driver as F2Driver } from "./components/Formula2Championship";
-import Formula3Championship, { initialF3Drivers, f3Teams, type Driver as F3Driver } from "./components/Formula3Championship";
+import Formula2Championship, { initialF2Drivers, f2Teams, driverDetails as f2DriverDetails, teamDetails as f2TeamDetails, type Driver as F2Driver } from "./components/Formula2Championship";
+import Formula3Championship, { initialF3Drivers, f3Teams, driverDetails as f3DriverDetails, teamDetails as f3TeamDetails, type Driver as F3Driver } from "./components/Formula3Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
@@ -212,8 +212,10 @@ export default function Home() {
   const profileDriver = profileDrivers.find(d => d.id === profileDriverId);
   const profileTeam = profileTeams.find(t => t.id === profileTeamId);
   const profileTeamDrivers = profileTeam ? profileDrivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
+  const activeTeamDetails = profileCategory==="F1" ? teamDetails : profileCategory==="F2" ? f2TeamDetails : f3TeamDetails;
+  const activeDriverDetails = profileCategory==="F1" ? driverDetails : profileCategory==="F2" ? f2DriverDetails : f3DriverDetails;
   const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : (profileTeam && "headquarters" in profileTeam ? profileTeam.headquarters : undefined);
-  const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const baseProfileDetails = profileDriver ? activeDriverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const pilotsRoster = pilotsCategory==="F1"
@@ -414,7 +416,7 @@ export default function Home() {
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação estimada de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
               <div className="driver-attributes-list">
-                {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileCategory==="F1"?teamDetails[profileTeam.id]?.[attribute.key]:undefined) ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${teamDetails[profileTeam.id]?.[attribute.key] ?? 0}%`}}/></div></div>)}
+                {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{activeTeamDetails[profileTeam.id]?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${activeTeamDetails[profileTeam.id]?.[attribute.key] ?? 0}%`}}/></div></div>)}
               </div>
             </div>
             <div className="panel team-profile-roster">
