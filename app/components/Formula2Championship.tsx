@@ -8,7 +8,7 @@ import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-export type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" | "Aposentado" };
+export type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" | "Aposentado"; isFictional?: boolean };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
@@ -208,6 +208,7 @@ export default function Formula2Championship({development,setDevelopment,drivers
       <div className="driver-facts-grid">
         <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
         <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
+        {profileDriver.isFictional && <div className="panel driver-fact"><span>ORIGEM</span><b>PILOTO FICTÍCIO · ACADEMIA</b></div>
         <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
         <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>{profileLicensePoints >= 40 ? "COMPLETO" : `${profileLicensePoints} / 40 PTS`}</b></div>
       </div>
