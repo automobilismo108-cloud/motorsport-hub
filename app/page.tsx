@@ -137,7 +137,7 @@ export default function Home() {
   const openTeamProfile = (id: string) => { setProfileDriverId(null); setProfileTeamId(id); };
   const profileDriver = drivers.find(d => d.id === profileDriverId);
   const profileTeam = teams.find(t => t.id === profileTeamId);
-  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
+  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
@@ -155,6 +155,7 @@ export default function Home() {
   const doTransfer = () => {
     const [sourceCategory,sourceId] = selectedDriver.split(":") as ["F1"|"F2"|"F3",string];
     const driver = allMarketDrivers.find(d=>d.category===sourceCategory && d.id===sourceId);
+    if (!driver) return;
     if (destinationCategory==="RETIRE") {
       const from = marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
       if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Aposentado"}:d));
