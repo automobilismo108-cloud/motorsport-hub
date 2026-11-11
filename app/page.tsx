@@ -114,13 +114,14 @@ const ACADEMY_LAST_NAMES = ["Moretti","Silva","Laurent","Weber","Kowalski","Tana
 const ACADEMY_COUNTRIES = ["Brasil","Itália","França","Alemanha","Polônia","Japão","Dinamarca","Portugal","Reino Unido","Espanha","Suécia","Argentina","Países Baixos","Finlândia","México","Austrália"];
 function createAcademyFill(category:"F2"|"F3",teamId:string,resultingRoster:TransferDriver[],allDrivers:TransferDriver[]) {
   const activeInTeam=resultingRoster.filter(d=>d.teamId===teamId&&d.status!=="Transferido"&&d.status!=="Aposentado").length;
-  if(activeInTeam>0) return {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
+  const teamCapacity=category==="F3"?3:2;
+  if(activeInTeam>=teamCapacity) return {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
   const usedNames=new Set(allDrivers.map(d=>d.name));
   const usedNumbers=new Set(allDrivers.filter(d=>d.number>=1&&d.number<=99).map(d=>d.number));
   const created:TransferDriver[]=[];
   const records:DriverDevelopmentState={};
   let candidate=0;
-  while(created.length<2&&candidate<ACADEMY_FIRST_NAMES.length*ACADEMY_LAST_NAMES.length){
+  while(activeInTeam+created.length<teamCapacity&&candidate<ACADEMY_FIRST_NAMES.length*ACADEMY_LAST_NAMES.length){
     const first=ACADEMY_FIRST_NAMES[candidate%ACADEMY_FIRST_NAMES.length];
     const last=ACADEMY_LAST_NAMES[Math.floor(candidate/ACADEMY_FIRST_NAMES.length)];
     candidate++;
@@ -301,7 +302,8 @@ export default function Home() {
       d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado" &&
       !(!isFreeAgent && sourceCategory===destinationCategory && d.id===sourceId)
     ).length;
-    if (occupied>=2) { setNotice(target.name+" já tem dois pilotos ativos. Escolha outra equipe ou libere uma vaga."); return; }
+    const targetCapacity=destinationCategory==="F3"?3:2;
+    if (occupied>=targetCapacity) { setNotice(target.name+" já atingiu o limite de "+targetCapacity+" pilotos ativos. Escolha outra equipe ou libere uma vaga."); return; }
 
     move.to = target.name+" · "+destinationCategory;
     const keyFor = (category:"F1"|"F2"|"F3") => category==="F1" ? "f1" : category==="F2" ? "f2" : "f3";
@@ -437,7 +439,7 @@ export default function Home() {
             </div>
             <div className="dashboard-grid">
               <div className="panel roster-panel"><div className="panel-head"><div><h2>Grid da temporada</h2><p>Composição atual das equipes</p></div><button className="text-button" onClick={()=>setSection("Equipes")}>Ver equipes <ArrowUpRight size={14}/></button></div>
-                <div className="team-list">{teams.map(t=>{const ds=drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId===t.id);return <div className="team-row" key={t.id}><div className="team-stripe" style={{background:t.color}}/><div className="team-monogram" style={{color:t.color}}>{t.short}</div><div className="team-info"><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button><span>{ds.map(d=>d.name).join(" · ")||"Nenhum piloto titular"}</span></div><div className="seat-count">{ds.length}/2 <span>vagas</span></div></div>})}</div>
+                <div className="team-list">{teams.map(t=>{const ds=drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId===t.id);return <div className="team-row" key={t.id}><div className="team-stripe" style={{background:t.color}}/><div className="team-monogram" style={{color:t.color}}>{t.short}</div><div className="team-info"><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button><span>{ds.map(d=>d.name).join(" · ")||"Nenhum piloto titular"}</span></div><div className="seat-count">{ds.length}/{teamsCategory==="F3"?3:2} <span>vagas</span></div></div>})}</div>
               </div>
               <div className="panel activity-panel"><div className="panel-head"><div><h2>Mercado recente</h2><p>Últimas movimentações registradas</p></div><Activity size={17} className="muted-icon"/></div>
                 <div className="activity-list">{moves.slice(0,5).map(m=><div className="activity-item" key={m.id}><div className="activity-icon"><ArrowLeftRight size={16}/></div><div className="activity-copy"><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button><span>{m.from} <ArrowUpRight size={11}/> {m.to}</span><small>{m.date}</small></div><span className="status-tag">{m.status}</span></div>)}</div>
@@ -465,10 +467,10 @@ export default function Home() {
               const roster=teamsCategory==="F1"?drivers:teamsCategory==="F2"?f2Drivers:f3Drivers;
               const ds=roster.filter(d=>d.teamId===t.id && d.status!=="Transferido" && d.status!=="Aposentado");
               return <div className="panel team-card" key={teamsCategory+"-"+t.id}>
-                <div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div>
+                <div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/{teamsCategory==="F3"?3:2} vagas</span></div>
                 <h3>{teamsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>:<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>}</h3>
                 <div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id,teamsCategory)}>{d.name}</button></div>)}{ds.length===0&&<div className="empty-team-roster">Nenhum piloto contratado</div>}</div>
-                <div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div>
+                <div className="seat-bar"><i style={{width:`${Math.min(100,ds.length/(teamsCategory==="F3"?3:2)*100)}%`,background:t.color}}/></div>
               </div>
             })}</div>
           </>}
@@ -485,7 +487,7 @@ export default function Home() {
         </div>
       </section>
 
-      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova movimentação</h2><p>Transfira entre equipes, promova de categoria ou registre uma aposentadoria.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{allMarketDrivers.map(d=><option key={d.selectionId} value={d.selectionId}>{d.name} · {d.selectionId.startsWith("LIVRE|") ? "LIVRE" : d.category} · {d.selectionId.startsWith("LIVRE|") ? "Sem contrato" : marketTeamName(d.category as "F1"|"F2"|"F3",d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>TIPO DE MOVIMENTAÇÃO<select value={destinationCategory} onChange={e=>{setDestinationCategory(e.target.value as "F1"|"F2"|"F3"|"RETIRE");setDestination("");}}><option value="F1">Fórmula 1</option><option value="F2">Fórmula 2</option><option value="F3">Fórmula 3</option><option value="RETIRE">Aposentar piloto</option></select></label>{destinationCategory!=="RETIRE"&&<label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{(destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<div className="modal-hint">Limite de dois pilotos por equipe. Promoções permitidas: F3 → F2 e F2 → F1. Rebaixamentos não são permitidos. A Superlicença não é exigida. Aposentadorias preservam o histórico do piloto.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||(destinationCategory!=="RETIRE"&&!destination)} onClick={doTransfer}><Check size={16}/> Confirmar movimentação</button></div></div></div>}
+      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova movimentação</h2><p>Transfira entre equipes, promova de categoria ou registre uma aposentadoria.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{allMarketDrivers.map(d=><option key={d.selectionId} value={d.selectionId}>{d.name} · {d.selectionId.startsWith("LIVRE|") ? "LIVRE" : d.category} · {d.selectionId.startsWith("LIVRE|") ? "Sem contrato" : marketTeamName(d.category as "F1"|"F2"|"F3",d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>TIPO DE MOVIMENTAÇÃO<select value={destinationCategory} onChange={e=>{setDestinationCategory(e.target.value as "F1"|"F2"|"F3"|"RETIRE");setDestination("");}}><option value="F1">Fórmula 1</option><option value="F2">Fórmula 2</option><option value="F3">Fórmula 3</option><option value="RETIRE">Aposentar piloto</option></select></label>{destinationCategory!=="RETIRE"&&<label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{(destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<div className="modal-hint">Limite de dois pilotos por equipe na F1/F2 e três na F3. Promoções permitidas: F3 → F2 e F2 → F1. Rebaixamentos não são permitidos. A Superlicença não é exigida. Aposentadorias preservam o histórico do piloto.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||(destinationCategory!=="RETIRE"&&!destination)} onClick={doTransfer}><Check size={16}/> Confirmar movimentação</button></div></div></div>}
     </main>
   );
 }
