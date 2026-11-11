@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useAuth } from "@/app/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, buildSuperLicenseAwards, getSuperLicensePoints, getSuperLicenseWindow, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
@@ -115,12 +115,11 @@ const driverDetails: Record<string, { age: number; attributes: { racePace: numbe
 const sprintPoints = [10,8,6,5,4,3,2,1];
 const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
-export default function Formula3Championship() {
+export default function Formula3Championship({development,setDevelopment}:{development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>}) {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f3:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f3:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
-  const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
@@ -198,8 +197,8 @@ export default function Formula3Championship() {
     setNotice(rows.length+" resultado(s) de "+session+" registrados. Classificações atualizadas.");
   };
 
-  if(racesError||resultsError||licenseError||developmentError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 3.</div>;
-  if(!racesReady||!resultsReady||!licenseReady||!developmentReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 3...</div>;
+  if(racesError||resultsError||licenseError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 3.</div>;
+  if(!racesReady||!resultsReady||!licenseReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 3...</div>;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
