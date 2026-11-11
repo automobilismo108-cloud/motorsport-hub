@@ -461,7 +461,7 @@ export default function Home() {
               return <div className="panel team-card" key={teamsCategory+"-"+t.id}>
                 <div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div>
                 <h3>{teamsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>:<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>}</h3>
-                <div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span>{teamsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button>:<b>{d.name}</b>}</div>)}{ds.length===0&&<div className="empty-team-roster">Nenhum piloto contratado</div>}</div>
+                <div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id,teamsCategory)}>{d.name}</button></div>)}{ds.length===0&&<div className="empty-team-roster">Nenhum piloto contratado</div>}</div>
                 <div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div>
               </div>
             })}</div>
