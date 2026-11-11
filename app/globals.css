@@ -80,3 +80,5 @@
 .team-profile-driver small{font-size:9px;color:#8290a1}
 .team-profile-driver>svg{color:#718093}
 @media(max-width:600px){.team-profile-hero{align-items:flex-start;flex-wrap:wrap;padding:16px}.team-profile-emblem{min-width:58px;height:58px;font-size:16px}.team-profile-hero>.status-tag{width:100%}}
+
+.market-tabs{margin-bottom:14px}.free-agent-origin{margin-top:4px;color:#8290a1;font-size:9px}.market-tabs .nav-count{margin-left:2px}
