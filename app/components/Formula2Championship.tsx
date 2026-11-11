@@ -201,7 +201,7 @@ export default function Formula2Championship({development,setDevelopment}:{devel
       <div className="driver-facts-grid">
         <div className="panel driver-fact"><span>SEDE</span><b>{profileTeam.headquarters}</b></div>
         <div className="panel driver-fact"><span>PILOTOS</span><b>{drivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>
-        <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · 2026</b></div>
+        <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · {ACTIVE_SEASON}</b></div>
       </div>
       <div className="panel driver-attributes-panel">
         <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
@@ -209,12 +209,12 @@ export default function Formula2Championship({development,setDevelopment}:{devel
           {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileTeamDetails?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileTeamDetails?.[attribute.key] ?? 0}%`}}/></div></div>)}
         </div>
       </div>
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada 2026</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada {ACTIVE_SEASON}</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>
     </div> : profileDriver ? <div className="driver-profile-page">
       <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number">#{profileDriver.number}</div>
-        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · <button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button> · Temporada 2026</p></div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · <button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button> · Temporada {ACTIVE_SEASON}</p></div>
         <span className="status-tag">EM DESENVOLVIMENTO</span>
       </div>
       <div className="driver-facts-grid">
