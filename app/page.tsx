@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
+import { ACTIVE_SEASON, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
@@ -145,8 +145,6 @@ export default function Home() {
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
-  const profileHasLegacyF1Seat = !!profileDriver && getLegacyF1LicenseId(profileDriver.id) !== null;
-  const profileLicenseEligible = profileHasLegacyF1Seat || profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
   const filteredDrivers = useMemo(() => drivers.filter(d => d.status!=="Transferido" &&
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
