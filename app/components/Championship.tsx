@@ -105,7 +105,7 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
   const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
 
-  if(!racesReady || !resultsReady) return <div className="championship-module"><div className="panel" style={{padding:24}}>Sincronizando calendário e resultados com segurança...</div></div>;
+  if(racesError || resultsError) return <div className="championship-module"><div className="panel" style={{padding:24}}>{racesError || resultsError}</div></div>;\n  if(!racesReady || !resultsReady) return <div className="championship-module"><div className="panel" style={{padding:24}}>Sincronizando calendário e resultados com segurança...</div></div>;
 
   if(settingsOnly) return <div className="championship-module">
     <div className="panel settings-reset-panel">
