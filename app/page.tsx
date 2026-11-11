@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 type Team = { id: string; name: string; color: string; short: string };
-type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
+type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva"; age: number; contractUntil: number | null; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string };
 
 const initialTeams: Team[] = [
@@ -25,6 +25,31 @@ const initialTeams: Team[] = [
   { id:"alp", name:"Alpine", short:"ALP", color:"#ff87bc" },
   { id:"cad", name:"Cadillac", short:"CAD", color:"#d5d5d5" },
 ];
+
+const driverDetails: Record<string, Omit<Driver, "id" | "name" | "country" | "number" | "teamId" | "status">> = {
+  "Lando Norris": { age:26, contractUntil:2030, attributes:{racePace:97,qualifying:97,overtaking:91,defending:91,consistency:96} },
+  "Oscar Piastri": { age:25, contractUntil:2028, attributes:{racePace:96,qualifying:96,overtaking:93,defending:94,consistency:95} },
+  "George Russell": { age:28, contractUntil:2027, attributes:{racePace:94,qualifying:95,overtaking:88,defending:91,consistency:94} },
+  "Kimi Antonelli": { age:20, contractUntil:2027, attributes:{racePace:88,qualifying:91,overtaking:86,defending:82,consistency:82} },
+  "Max Verstappen": { age:29, contractUntil:2030, attributes:{racePace:100,qualifying:99,overtaking:98,defending:99,consistency:98} },
+  "Isack Hadjar": { age:22, contractUntil:2027, attributes:{racePace:88,qualifying:89,overtaking:85,defending:84,consistency:83} },
+  "Charles Leclerc": { age:29, contractUntil:2028, attributes:{racePace:94,qualifying:98,overtaking:88,defending:91,consistency:90} },
+  "Lewis Hamilton": { age:41, contractUntil:2027, attributes:{racePace:92,qualifying:91,overtaking:96,defending:97,consistency:94} },
+  "Alexander Albon": { age:30, contractUntil:2027, attributes:{racePace:91,qualifying:90,overtaking:89,defending:93,consistency:94} },
+  "Carlos Sainz": { age:32, contractUntil:2028, attributes:{racePace:93,qualifying:92,overtaking:92,defending:94,consistency:96} },
+  "Liam Lawson": { age:24, contractUntil:2026, attributes:{racePace:85,qualifying:86,overtaking:88,defending:87,consistency:82} },
+  "Arvid Lindblad": { age:19, contractUntil:2026, attributes:{racePace:80,qualifying:83,overtaking:82,defending:78,consistency:76} },
+  "Fernando Alonso": { age:45, contractUntil:2027, attributes:{racePace:95,qualifying:93,overtaking:98,defending:99,consistency:97} },
+  "Lance Stroll": { age:28, contractUntil:2027, attributes:{racePace:83,qualifying:82,overtaking:83,defending:85,consistency:80} },
+  "Esteban Ocon": { age:30, contractUntil:2026, attributes:{racePace:88,qualifying:87,overtaking:89,defending:92,consistency:86} },
+  "Oliver Bearman": { age:21, contractUntil:2026, attributes:{racePace:88,qualifying:91,overtaking:88,defending:85,consistency:84} },
+  "Nico Hülkenberg": { age:39, contractUntil:2027, attributes:{racePace:90,qualifying:91,overtaking:87,defending:91,consistency:92} },
+  "Gabriel Bortoleto": { age:22, contractUntil:2027, attributes:{racePace:86,qualifying:88,overtaking:85,defending:84,consistency:84} },
+  "Pierre Gasly": { age:30, contractUntil:2028, attributes:{racePace:91,qualifying:91,overtaking:87,defending:89,consistency:92} },
+  "Franco Colapinto": { age:23, contractUntil:2027, attributes:{racePace:83,qualifying:85,overtaking:85,defending:81,consistency:78} },
+  "Sergio Pérez": { age:36, contractUntil:2029, attributes:{racePace:91,qualifying:88,overtaking:95,defending:96,consistency:91} },
+  "Valtteri Bottas": { age:37, contractUntil:2027, attributes:{racePace:89,qualifying:92,overtaking:86,defending:89,consistency:93} },
+};
 
 const initialDrivers: Driver[] = [
   {id:"d1",name:"Lando Norris",country:"Reino Unido",number:1,teamId:"mcl",status:"Titular"},
@@ -49,7 +74,7 @@ const initialDrivers: Driver[] = [
   {id:"d20",name:"Franco Colapinto",country:"Argentina",number:43,teamId:"alp",status:"Titular"},
   {id:"d21",name:"Sergio Pérez",country:"México",number:11,teamId:"cad",status:"Titular"},
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
-];
+].map(driver => ({ ...driver, ...driverDetails[driver.name] }));
 
 const registeredChampionships = [
   { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
@@ -81,7 +106,7 @@ export default function Home() {
       const saved = localStorage.getItem("motorsport-hub:workspace:v1");
       if (saved) {
         const data = JSON.parse(saved);
-        if (Array.isArray(data.drivers)) setDrivers(data.drivers);
+        if (Array.isArray(data.drivers)) setDrivers(data.drivers.map((saved: Partial<Driver> & { id: string }) => { const base = initialDrivers.find(d => d.id === saved.id); return base ? { ...base, ...saved, attributes: { ...base.attributes, ...(saved.attributes ?? {}) } } : saved as Driver; }));
         if (Array.isArray(data.moves)) setMoves(data.moves);
       }
     } catch (error) { console.error("Não foi possível carregar os dados salvos.", error); }
@@ -152,7 +177,17 @@ export default function Home() {
               <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · {teamName(profileDriver.teamId)} · {profileDriver.status}</p></div>
               <span className="status-tag">TEMPORADA 2026</span>
             </div>
-            <div className="panel driver-profile-placeholder"><Users size={25}/><h3>Ficha completa em preparação</h3><p>Este espaço está reservado para a ficha completa do piloto: estatísticas, carreira, contratos, resultados, histórico e informações pessoais.</p><span>PERFIL DO PILOTO · {profileDriver.name.toUpperCase()}</span></div>
+            <div className="driver-facts-grid">
+              <div className="panel driver-fact"><span>IDADE</span><b>{profileDriver.age} anos</b></div>
+              <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
+              <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDriver.contractUntil ? `Até o fim de ${profileDriver.contractUntil}` : "Não divulgado"}</b></div>
+            </div>
+            <div className="panel driver-attributes-panel">
+              <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">NOTAS EDITÁVEIS NO CÓDIGO</span></div>
+              <div className="driver-attributes-list">
+                {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileDriver.attributes[attribute.key]}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDriver.attributes[attribute.key]}%`}}/></div></div>)}
+              </div>
+            </div>
           </div>}
           {!profileDriver && section==="Visão geral" && <>
             <div className="stats-grid">
