@@ -69,7 +69,7 @@ export function useCloudState<T>(
         .from("workspace_data")
         .upsert({ user_id: user.id, data_key: dataKey, payload: value }, { onConflict: "user_id,data_key" });
       if (error) console.error("Falha ao salvar dados na nuvem.", error);
-      else if (legacyStorageKey) window.localStorage.removeItem(legacyStorageKey);
+
     };
     void save();
   }, [value, ready, user?.id, dataKey]);
