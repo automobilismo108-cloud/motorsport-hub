@@ -7,11 +7,10 @@ import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, buildSuperLicenseAwards, 
 import { useCloudState } from "@/lib/useCloudState";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-type Driver = { id: string; name: string; country: string; number: number; teamId: string };
+type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
-type SuperLicenseAward = { id: string; driverId: string; driverName: string; category: "F2" | "F3"; season: number; position: number; points: number };
 
 const teams: Team[] = [
   {id:"inv",name:"Invicta Racing",short:"INV",color:"#e6c84f",headquarters:"Attleborough, Norfolk, Reino Unido"},
@@ -28,28 +27,28 @@ const teams: Team[] = [
 ];
 
 const drivers: Driver[] = [
-  {id:"f2-1",name:"Rafael Câmara",country:"Brasil",number:1,teamId:"inv"},
-  {id:"f2-2",name:"Joshua Dürksen",country:"Paraguai",number:2,teamId:"inv"},
-  {id:"f2-3",name:"Ritomo Miyata",country:"Japão",number:3,teamId:"hit"},
-  {id:"f2-4",name:"Colton Herta",country:"Estados Unidos",number:4,teamId:"hit"},
-  {id:"f2-5",name:"Noel León",country:"México",number:5,teamId:"cam"},
-  {id:"f2-6",name:"Nikola Tsolov",country:"Bulgária",number:6,teamId:"cam"},
-  {id:"f2-7",name:"Dino Beganovic",country:"Suécia",number:7,teamId:"dam"},
-  {id:"f2-8",name:"Roman Bilinski",country:"Polônia",number:8,teamId:"dam"},
-  {id:"f2-9",name:"Gabriele Minì",country:"Itália",number:9,teamId:"mp"},
-  {id:"f2-10",name:"Oliver Goethe",country:"Alemanha",number:10,teamId:"mp"},
-  {id:"f2-11",name:"Sebastián Montoya",country:"Colômbia",number:11,teamId:"pre"},
-  {id:"f2-12",name:"Mari Boya",country:"Espanha",number:12,teamId:"pre"},
-  {id:"f2-14",name:"Martinius Stenshorne",country:"Noruega",number:14,teamId:"rod"},
-  {id:"f2-15",name:"Alexander Dunne",country:"Irlanda",number:15,teamId:"rod"},
-  {id:"f2-16",name:"Kush Maini",country:"Índia",number:16,teamId:"art"},
-  {id:"f2-17",name:"Tasanapol Inthraphuvasak",country:"Tailândia",number:17,teamId:"art"},
-  {id:"f2-20",name:"Emerson Fittipaldi",country:"Brasil",number:20,teamId:"aix"},
-  {id:"f2-21",name:"Cian Shields",country:"Reino Unido",number:21,teamId:"aix"},
-  {id:"f2-22",name:"Hiyu Yamakoshi",country:"Japão",number:22,teamId:"var"},
-  {id:"f2-23",name:"Rafael Villagómez",country:"México",number:23,teamId:"var"},
-  {id:"f2-24",name:"Laurens van Hoepen",country:"Países Baixos",number:24,teamId:"tri"},
-  {id:"f2-25",name:"John Bennett",country:"Reino Unido",number:25,teamId:"tri"},
+  {id:"f2-1",licenseId:"driver:rafael-camara",name:"Rafael Câmara",country:"Brasil",number:1,teamId:"inv"},
+  {id:"f2-2",licenseId:"driver:joshua-durksen",name:"Joshua Dürksen",country:"Paraguai",number:2,teamId:"inv"},
+  {id:"f2-3",licenseId:"driver:ritomo-miyata",name:"Ritomo Miyata",country:"Japão",number:3,teamId:"hit"},
+  {id:"f2-4",licenseId:"driver:colton-herta",name:"Colton Herta",country:"Estados Unidos",number:4,teamId:"hit"},
+  {id:"f2-5",licenseId:"driver:noel-leon",name:"Noel León",country:"México",number:5,teamId:"cam"},
+  {id:"f2-6",licenseId:"driver:nikola-tsolov",name:"Nikola Tsolov",country:"Bulgária",number:6,teamId:"cam"},
+  {id:"f2-7",licenseId:"driver:dino-beganovic",name:"Dino Beganovic",country:"Suécia",number:7,teamId:"dam"},
+  {id:"f2-8",licenseId:"driver:roman-bilinski",name:"Roman Bilinski",country:"Polônia",number:8,teamId:"dam"},
+  {id:"f2-9",licenseId:"driver:gabriele-mini",name:"Gabriele Minì",country:"Itália",number:9,teamId:"mp"},
+  {id:"f2-10",licenseId:"driver:oliver-goethe",name:"Oliver Goethe",country:"Alemanha",number:10,teamId:"mp"},
+  {id:"f2-11",licenseId:"driver:sebastian-montoya",name:"Sebastián Montoya",country:"Colômbia",number:11,teamId:"pre"},
+  {id:"f2-12",licenseId:"driver:mari-boya",name:"Mari Boya",country:"Espanha",number:12,teamId:"pre"},
+  {id:"f2-14",licenseId:"driver:martinius-stenshorne",name:"Martinius Stenshorne",country:"Noruega",number:14,teamId:"rod"},
+  {id:"f2-15",licenseId:"driver:alexander-dunne",name:"Alexander Dunne",country:"Irlanda",number:15,teamId:"rod"},
+  {id:"f2-16",licenseId:"driver:kush-maini",name:"Kush Maini",country:"Índia",number:16,teamId:"art"},
+  {id:"f2-17",licenseId:"driver:tasanapol-inthraphuvasak",name:"Tasanapol Inthraphuvasak",country:"Tailândia",number:17,teamId:"art"},
+  {id:"f2-20",licenseId:"driver:emerson-fittipaldi",name:"Emerson Fittipaldi",country:"Brasil",number:20,teamId:"aix"},
+  {id:"f2-21",licenseId:"driver:cian-shields",name:"Cian Shields",country:"Reino Unido",number:21,teamId:"aix"},
+  {id:"f2-22",licenseId:"driver:hiyu-yamakoshi",name:"Hiyu Yamakoshi",country:"Japão",number:22,teamId:"var"},
+  {id:"f2-23",licenseId:"driver:rafael-villagomez",name:"Rafael Villagómez",country:"México",number:23,teamId:"var"},
+  {id:"f2-24",licenseId:"driver:laurens-van-hoepen",name:"Laurens van Hoepen",country:"Países Baixos",number:24,teamId:"tri"},
+  {id:"f2-25",licenseId:"driver:john-bennett",name:"John Bennett",country:"Reino Unido",number:25,teamId:"tri"},
 ];
 
 const initialRaces: Race[] = [
@@ -106,8 +105,8 @@ const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
 export default function Formula2Championship() {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
-  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:races`,initialRaces);
-  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:results`,[]);
+  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,initialRaces);
+  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f2:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
