@@ -5,8 +5,8 @@ import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, get
 import { useCloudState } from "@/lib/useCloudState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
-import Formula2Championship from "./components/Formula2Championship";
-import Formula3Championship from "./components/Formula3Championship";
+import Formula2Championship, { initialF2Drivers, f2Teams } from "./components/Formula2Championship";
+import Formula3Championship, { initialF3Drivers, f3Teams } from "./components/Formula3Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
@@ -15,7 +15,7 @@ import {
 
 type Team = { id: string; name: string; color: string; short: string };
 type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
-type Move = { id: number; driver: string; from: string; to: string; date: string; status: string };
+type Move = { id: number; driver: string; from: string; to: string; date: string; status: string; category?: string };
 
 const initialTeams: Team[] = [
   { id:"mcl", name:"McLaren", short:"MCL", color:"#ff8700" },
@@ -118,6 +118,8 @@ export default function Home() {
   const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDriversSeed, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
+  const [f2Drivers,setF2Drivers,f2DriversReady,f2DriversError] = useCloudState<typeof initialF2Drivers>("workspace:f2:drivers",initialF2Drivers);
+  const [f3Drivers,setF3Drivers,f3DriversReady,f3DriversError] = useCloudState<typeof initialF3Drivers>("workspace:f3:drivers",initialF3Drivers);
   const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [search, setSearch] = useState("");
@@ -126,6 +128,7 @@ export default function Home() {
   const [profileDriverId, setProfileDriverId] = useState<string | null>(null);
   const [profileTeamId, setProfileTeamId] = useState<string | null>(null);
   const [destination, setDestination] = useState("");
+  const [destinationCategory,setDestinationCategory] = useState<"F1"|"F2"|"F3">("F1");
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
 
@@ -148,18 +151,43 @@ export default function Home() {
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
 
+  const allMarketDrivers = [
+    ...drivers.map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
+    ...f2Drivers.map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
+    ...f3Drivers.map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
+  ];
+  const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
+    (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
   const doTransfer = () => {
-    const driver = drivers.find(d => d.id === selectedDriver);
-    const target = teams.find(t => t.id === destination);
+    const [sourceCategory,sourceId] = selectedDriver.split(":") as ["F1"|"F2"|"F3",string];
+    const driver = allMarketDrivers.find(d=>d.category===sourceCategory && d.id===sourceId);
+    const targetTeams = destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams;
+    const target = targetTeams.find(t=>t.id===destination);
     if (!driver || !target) return;
-    if (driver.teamId === target.id) { setNotice("Este piloto já pertence a essa equipe."); return; }
-    const occupants = drivers.filter(d => d.teamId === target.id && d.status === "Titular");
-    if (occupants.length >= 2) { setNotice(`${target.name} já possui dois titulares. Libere uma vaga antes de concluir.`); return; }
-    const from = teamName(driver.teamId);
-    setDrivers(old => old.map(d => d.id === driver.id ? {...d, teamId: target.id} : d));
-    setMoves(old => [{id:Date.now(),driver:driver.name,from,to:target.name,date:"Simulação " + ACTIVE_SEASON,status:"Concluída"},...old]);
-    setModal(false); setSelectedDriver(""); setDestination("");
-    setNotice(`Transferência simulada: ${driver.name} → ${target.name}`);
+    const order = {F3:3,F2:2,F1:1};
+    if (order[destinationCategory] > order[sourceCategory]) { setNotice("Não são permitidos rebaixamentos entre categorias."); return; }
+    if (sourceCategory===destinationCategory && driver.teamId===target.id) { setNotice("Este piloto já pertence a essa equipe."); return; }
+    const targetRoster = destinationCategory==="F1"?drivers:destinationCategory==="F2"?f2Drivers:f3Drivers;
+    const occupants = targetRoster.filter(d=>d.teamId===target.id && (destinationCategory!=="F1" || d.status==="Titular"));
+    if (occupants.length >= 2) { setNotice(target.name+" já possui dois pilotos. Libere uma vaga antes de concluir."); return; }
+    const from = marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
+    const to = target.name+" · "+destinationCategory;
+    if (sourceCategory===destinationCategory) {
+      if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
+      if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
+      if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
+    } else {
+      if(sourceCategory==="F1") setDrivers(old=>old.filter(d=>d.id!==sourceId));
+      if(sourceCategory==="F2") setF2Drivers(old=>old.filter(d=>d.id!==sourceId));
+      if(sourceCategory==="F3") setF3Drivers(old=>old.filter(d=>d.id!==sourceId));
+      const base = {licenseId:driver.licenseId ?? "driver:"+driver.name.toLowerCase().replace(/[^a-z0-9]+/g,"-"),name:driver.name,country:driver.country,number:driver.number,teamId:target.id};
+      if(destinationCategory==="F1") setDrivers(old=>[...old,{...base,id:"transfer-"+base.licenseId.replace("driver:",""),status:"Titular"}]);
+      if(destinationCategory==="F2") setF2Drivers(old=>[...old,{...base,id:"f2-transfer-"+base.licenseId.replace("driver:","")}]);
+      if(destinationCategory==="F3") setF3Drivers(old=>[...old,{...base,id:"f3-transfer-"+base.licenseId.replace("driver:","")}]);
+    }
+    setMoves(old=>[{id:Date.now(),driver:driver.name,from,to,date:"Temporada "+ACTIVE_SEASON,status:"Concluída",category:sourceCategory+" → "+destinationCategory},...old]);
+    setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
+    setNotice("Transferência concluída: "+driver.name+" · "+sourceCategory+" → "+destinationCategory+".");
     setSection("Mercado");
   };
 
@@ -170,8 +198,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError || licenseError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError || developmentError}</div>;
-  if (!driversReady || !movesReady || !licenseReady || !developmentReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (driversError || movesError || licenseError || developmentError || f2DriversError || f3DriversError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError || developmentError || f2DriversError || f3DriversError}</div>;
+  if (!driversReady || !movesReady || !licenseReady || !developmentReady || !f2DriversReady || !f3DriversReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
@@ -195,8 +223,8 @@ export default function Home() {
 
           {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
           {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} driverDetails={driverDetails} development={development} setDevelopment={setDevelopment} settingsOnly={section==="Configurações"}/></>}
-          {section==="Campeonatos" && selectedChampionship==="f2" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula2Championship development={development} setDevelopment={setDevelopment}/></>}
-          {section==="Campeonatos" && selectedChampionship==="f3" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula3Championship development={development} setDevelopment={setDevelopment}/></>}
+          {section==="Campeonatos" && selectedChampionship==="f2" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula2Championship development={development} setDevelopment={setDevelopment} drivers={f2Drivers} setDrivers={setF2Drivers}/></>}
+          {section==="Campeonatos" && selectedChampionship==="f3" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula3Championship development={development} setDevelopment={setDevelopment} drivers={f3Drivers} setDrivers={setF3Drivers}/></>}
           {profileDriver && <div className="driver-profile-page">
             <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><ArrowLeft size={15}/> Voltar</button>
             <div className="panel driver-profile-hero">
@@ -278,12 +306,12 @@ export default function Home() {
 
           {!profileDriver && !profileTeam && section==="Equipes" && <div className="team-cards">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="panel team-card" key={t.id}><div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div><h3><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button></h3><div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button></div>)}</div><div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div></div>})}</div>}
 
-          {!profileDriver && !profileTeam && section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Movimentações reais de referência e simulações locais</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>As transferências criadas nesta demonstração alteram o grid apenas no navegador. A persistência no banco será ligada na próxima etapa.</span></div></div>}
+          {!profileDriver && !profileTeam && section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Movimentações reais de referência e simulações locais</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
           <footer> MOTORSPORT HUB <span>•</span> DADOS DE REFERÊNCIA: TEMPORADA 2026 <span>•</span> PROTÓTIPO 0.1</footer>
         </div>
       </section>
 
-      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova transferência</h2><p>Simule a mudança de equipe de um piloto.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{drivers.map(d=><option key={d.id} value={d.id}>{d.name} — {teamName(d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label><div className="modal-hint">Regra do protótipo: cada equipe pode ter até dois pilotos titulares. A transferência é registrada no histórico.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||!destination} onClick={doTransfer}><Check size={16}/> Confirmar simulação</button></div></div></div>}
+      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova transferência</h2><p>Transfira entre equipes ou promova o piloto para a categoria imediatamente superior.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{allMarketDrivers.map(d=><option key={d.selectionId} value={d.selectionId}>{d.name} · {d.category} · {marketTeamName(d.category,d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>CATEGORIA DE DESTINO<select value={destinationCategory} onChange={e=>{setDestinationCategory(e.target.value as "F1"|"F2"|"F3");setDestination("");}}><option value="F1">Fórmula 1</option><option value="F2">Fórmula 2</option><option value="F3">Fórmula 3</option></select></label><label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{(destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label><div className="modal-hint">Limite de dois pilotos por equipe. Promoções permitidas: F3 → F2 e F2 → F1. Rebaixamentos bloqueados. Não há exigência de Superlicença.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||!destination} onClick={doTransfer}><Check size={16}/> Confirmar transferência</button></div></div></div>}
     </main>
   );
 }
