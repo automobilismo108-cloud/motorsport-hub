@@ -141,9 +141,6 @@ export default function Home() {
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
-  const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
-  const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
-  const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
   const filteredDrivers = useMemo(() => drivers.filter(d => d.status!=="Transferido" &&
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -241,14 +238,6 @@ export default function Home() {
                 <div className="panel driver-fact"><span>TEMPORADAS REGISTRADAS</span><b>{profileDevelopment?.history.length ?? 0}</b></div>
               </div>
               <div className="driver-attributes-list">{profileDevelopment?.history.slice().reverse().map((item,index)=><div className="driver-attribute-row" key={`${item.category}-${item.season}-${index}`}><div><b>{item.season} · {item.category}</b><strong>{item.change>0?"+":""}{item.change}</strong></div><small>Posição final: {item.position}º · Média {item.overallBefore} → {item.overallAfter}</small></div>)}</div>
-            </div>
-            <div className="panel driver-attributes-panel">
-              <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontuação informativa · não bloqueia contratações ou participação</p></div><span className="status-tag">SEM RESTRIÇÃO</span></div>
-              <div className="driver-facts-grid">
-                <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
-                <div className="panel driver-fact"><span>STATUS</span><b>A Superlicença não bloqueia a participação</b></div>
-                <div className="panel driver-fact"><span>VALIDADE</span><b>Janela móvel de 3 temporadas</b></div>
-              </div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
