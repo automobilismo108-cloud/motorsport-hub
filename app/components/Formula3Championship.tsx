@@ -8,7 +8,7 @@ import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" };
+export type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
