@@ -218,19 +218,24 @@ export default function Home() {
     ...drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F1" as const, selectionId:"F1|"+d.id })),
     ...f2Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F2" as const, selectionId:"F2|"+d.id })),
     ...f3Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F3" as const, selectionId:"F3|"+d.id })),
+    ...freeAgents.map(d=>({ ...d, category:d.category ?? "F3" as const, selectionId:"LIVRE|"+d.id })),
   ];
   const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
     (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
   const doTransfer = () => {
     const separator = selectedDriver.indexOf("|");
     if (separator < 0) { setNotice("Selecione um piloto válido."); return; }
-    const sourceCategory = selectedDriver.slice(0,separator) as "F1"|"F2"|"F3";
+    const selectedCategory = selectedDriver.slice(0,separator);
+    const isFreeAgent = selectedCategory==="LIVRE";
     const sourceId = selectedDriver.slice(separator+1);
+    const freeDriver = isFreeAgent ? freeAgents.find(d=>d.id===sourceId) : undefined;
+    const sourceCategory = (isFreeAgent ? freeDriver?.category : selectedCategory) as "F1"|"F2"|"F3"|undefined;
+    if (!sourceCategory) { setNotice("Este piloto livre não está mais disponível."); return; }
     const sourceList = sourceCategory==="F1" ? marketState.f1 : sourceCategory==="F2" ? marketState.f2 : marketState.f3;
-    const driver = sourceList.find(d=>d.id===sourceId && d.status!=="Transferido" && d.status!=="Aposentado");
+    const driver = isFreeAgent ? freeDriver : sourceList.find(d=>d.id===sourceId && d.status!=="Transferido" && d.status!=="Aposentado");
     if (!driver) { setNotice("Este piloto não está mais disponível no elenco. Atualize a página e tente novamente."); return; }
 
-    const from = marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
+    const from = isFreeAgent ? "Mercado de pilotos livres · "+sourceCategory : marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
     const move = {
       id: Date.now(), driver: driver.name, from,
       to: destinationCategory==="RETIRE" ? "Aposentadoria" : "",
@@ -239,6 +244,7 @@ export default function Home() {
     };
 
     if (destinationCategory==="RETIRE") {
+      if (isFreeAgent) { setNotice("Pilotos livres não podem ser aposentados antes de assinarem com uma equipe."); return; }
       const key = sourceCategory==="F1" ? "f1" : sourceCategory==="F2" ? "f2" : "f3";
       const sourceAfter = marketState[key].map(d=>d.id===sourceId ? {...d,status:"Aposentado" as const} : d);
       const academy = sourceCategory==="F2" || sourceCategory==="F3"
@@ -282,6 +288,17 @@ export default function Home() {
 
     move.to = target.name+" · "+destinationCategory;
     const keyFor = (category:"F1"|"F2"|"F3") => category==="F1" ? "f1" : category==="F2" ? "f2" : "f3";
+    if (isFreeAgent) {
+      const targetKey=keyFor(destinationCategory);
+      const identity=driver.licenseId ?? "driver:"+driver.id;
+      const signed:TransferDriver={...driver,id:"signed-"+Date.now()+"-"+sourceId,licenseId:identity,teamId:target.id,status:destinationCategory==="F1"?"Titular":"Ativo"};
+      setMarketState(old=>({...old,freeAgents:old.freeAgents.filter(d=>d.id!==sourceId),[targetKey]:[...old[targetKey],signed],moves:[move,...old.moves]}));
+      const savedDevelopment=INITIAL_FREE_AGENT_POOL.development[identity];
+      if(savedDevelopment) setDevelopment(old=>({...old,[identity]:old[identity]??savedDevelopment}));
+      setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
+      setNotice(driver.name+" assinou com "+target.name+" · "+destinationCategory+".");
+      return;
+    }
     const sourceKey = keyFor(sourceCategory);
     const targetKey = keyFor(destinationCategory);
     if (sourceCategory===destinationCategory) {
@@ -421,7 +438,7 @@ export default function Home() {
         </div>
       </section>
 
-      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova movimentação</h2><p>Transfira entre equipes, promova de categoria ou registre uma aposentadoria.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{allMarketDrivers.map(d=><option key={d.selectionId} value={d.selectionId}>{d.name} · {d.category} · {marketTeamName(d.category,d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>TIPO DE MOVIMENTAÇÃO<select value={destinationCategory} onChange={e=>{setDestinationCategory(e.target.value as "F1"|"F2"|"F3"|"RETIRE");setDestination("");}}><option value="F1">Fórmula 1</option><option value="F2">Fórmula 2</option><option value="F3">Fórmula 3</option><option value="RETIRE">Aposentar piloto</option></select></label>{destinationCategory!=="RETIRE"&&<label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{(destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<div className="modal-hint">Limite de dois pilotos por equipe. Promoções permitidas: F3 → F2 e F2 → F1. Rebaixamentos não são permitidos. A Superlicença não é exigida. Aposentadorias preservam o histórico do piloto.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||(destinationCategory!=="RETIRE"&&!destination)} onClick={doTransfer}><Check size={16}/> Confirmar movimentação</button></div></div></div>}
+      {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><div className="modal"><div className="modal-head"><div><span className="eyebrow">MERCADO DE PILOTOS</span><h2>Nova movimentação</h2><p>Transfira entre equipes, promova de categoria ou registre uma aposentadoria.</p></div><button className="icon-button" onClick={()=>setModal(false)}><X size={18}/></button></div><label>PILOTO<select value={selectedDriver} onChange={e=>setSelectedDriver(e.target.value)}><option value="">Selecione um piloto</option>{allMarketDrivers.map(d=><option key={d.selectionId} value={d.selectionId}>{d.name} · {d.selectionId.startsWith("LIVRE|") ? "LIVRE" : d.category} · {d.selectionId.startsWith("LIVRE|") ? "Sem contrato" : marketTeamName(d.category,d.teamId)}</option>)}</select></label><div className="transfer-arrow"><ArrowDownLeft size={18}/> DESTINO</div><label>TIPO DE MOVIMENTAÇÃO<select value={destinationCategory} onChange={e=>{setDestinationCategory(e.target.value as "F1"|"F2"|"F3"|"RETIRE");setDestination("");}}><option value="F1">Fórmula 1</option><option value="F2">Fórmula 2</option><option value="F3">Fórmula 3</option><option value="RETIRE">Aposentar piloto</option></select></label>{destinationCategory!=="RETIRE"&&<label>NOVA EQUIPE<select value={destination} onChange={e=>setDestination(e.target.value)}><option value="">Selecione a equipe de destino</option>{(destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<div className="modal-hint">Limite de dois pilotos por equipe. Promoções permitidas: F3 → F2 e F2 → F1. Rebaixamentos não são permitidos. A Superlicença não é exigida. Aposentadorias preservam o histórico do piloto.</div><div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(false)}>Cancelar</button><button className="primary-button" disabled={!selectedDriver||(destinationCategory!=="RETIRE"&&!destination)} onClick={doTransfer}><Check size={16}/> Confirmar movimentação</button></div></div></div>}
     </main>
   );
 }
