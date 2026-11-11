@@ -65,7 +65,14 @@ const initialRaces: Race[] = [
   {id:14,round:14,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
-const teamDetails: Record<string, { power: number; downforce: number }> = {\n  inv:{power:84,downforce:82}, hit:{power:81,downforce:83}, cam:{power:84,downforce:81},\n  dam:{power:79,downforce:80}, mp:{power:82,downforce:82}, pre:{power:80,downforce:81},\n  rod:{power:83,downforce:84}, art:{power:81,downforce:82}, aix:{power:73,downforce:74},\n  var:{power:78,downforce:79}, tri:{power:79,downforce:80},\n};\n\nconst driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
+const teamDetails: Record<string, { power: number; downforce: number }> = {
+  inv:{power:84,downforce:82}, hit:{power:81,downforce:83}, cam:{power:84,downforce:81},
+  dam:{power:79,downforce:80}, mp:{power:82,downforce:82}, pre:{power:80,downforce:81},
+  rod:{power:83,downforce:84}, art:{power:81,downforce:82}, aix:{power:73,downforce:74},
+  var:{power:78,downforce:79}, tri:{power:79,downforce:80},
+};
+
+const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Rafael Câmara": { age:21, attributes:{racePace:84,qualifying:83,overtaking:80,defending:78,consistency:81} },
   "Joshua Dürksen": { age:22, attributes:{racePace:78,qualifying:75,overtaking:81,defending:79,consistency:74} },
   "Ritomo Miyata": { age:27, attributes:{racePace:78,qualifying:76,overtaking:74,defending:77,consistency:79} },
@@ -101,10 +108,13 @@ export default function Formula2Championship() {
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
   const [draft,setDraft] = useState<Record<string,{position:string;status:string}>>({});
   const [notice,setNotice] = useState("");
-  const [profileDriverId,setProfileDriverId] = useState<string | null>(null);\n  const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
+  const [profileDriverId,setProfileDriverId] = useState<string | null>(null);
+  const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
 
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
-  const profileDriver=drivers.find(d=>d.id===profileDriverId);\n  const profileTeam=teams.find(t=>t.id===profileTeamId);\n  const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
+  const profileDriver=drivers.find(d=>d.id===profileDriverId);
+  const profileTeam=teams.find(t=>t.id===profileTeamId);
+  const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
   const profileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
@@ -140,7 +150,26 @@ export default function Formula2Championship() {
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-    {profileTeam ? <div className="driver-profile-page">\n      <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><Flag size={15}/> Voltar ao campeonato</button>\n      <div className="panel driver-profile-hero">\n        <div className="driver-profile-number" style={{color:profileTeam.color}}>F2</div>\n        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>\n        <span className="status-tag">EQUIPE F2</span>\n      </div>\n      <div className="driver-facts-grid">\n        <div className="panel driver-fact"><span>SEDE</span><b>{profileTeam.headquarters}</b></div>\n        <div className="panel driver-fact"><span>PILOTOS</span><b>{drivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>\n        <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · 2026</b></div>\n      </div>\n      <div className="panel driver-attributes-panel">\n        <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>\n        <div className="driver-attributes-list">\n          {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileTeamDetails?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileTeamDetails?.[attribute.key] ?? 0}%`}}/></div></div>)}\n        </div>\n      </div>\n      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada 2026</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>\n    </div> : profileDriver ? <div className="driver-profile-page">
+    {profileTeam ? <div className="driver-profile-page">
+      <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><Flag size={15}/> Voltar ao campeonato</button>
+      <div className="panel driver-profile-hero">
+        <div className="driver-profile-number" style={{color:profileTeam.color}}>F2</div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>
+        <span className="status-tag">EQUIPE F2</span>
+      </div>
+      <div className="driver-facts-grid">
+        <div className="panel driver-fact"><span>SEDE</span><b>{profileTeam.headquarters}</b></div>
+        <div className="panel driver-fact"><span>PILOTOS</span><b>{drivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>
+        <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · 2026</b></div>
+      </div>
+      <div className="panel driver-attributes-panel">
+        <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
+        <div className="driver-attributes-list">
+          {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileTeamDetails?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileTeamDetails?.[attribute.key] ?? 0}%`}}/></div></div>)}
+        </div>
+      </div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada 2026</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>
+    </div> : profileDriver ? <div className="driver-profile-page">
       <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number">#{profileDriver.number}</div>
