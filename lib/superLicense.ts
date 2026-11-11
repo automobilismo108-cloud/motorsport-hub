@@ -11,6 +11,7 @@ export type SuperLicenseAward = {
   season: number;
   position: number;
   points: number;
+  version: number;
 };
 export type LicenseDriver = { id: string; name: string; licenseId: string };
 export type LicenseResult = { driverId: string; position: number | null; points: number; session?: "Sprint" | "Feature" };
@@ -48,6 +49,7 @@ export function normalizeLicenseAwards(value: unknown): SuperLicenseAward[] {
       driverKey: typeof item.driverKey === "string" && item.driverKey ? item.driverKey : legacyKey,
       driverId, driverName, category, season,
       position: Number(item.position) || 0, points: Number(item.points) || 0,
+      version: Number(item.version) || 1,
     };
   });
 }
@@ -96,6 +98,7 @@ export function buildSuperLicenseAwards(category: LicenseCategory, season: numbe
       driverKey: entry.driver.licenseId, driverId: entry.driver.id,
       driverName: entry.driver.name, category, season, position: rank,
       points: POINTS_BY_CATEGORY[category][rank - 1],
+      version: 2,
     });
   }
   return awards;
