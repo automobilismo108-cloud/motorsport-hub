@@ -72,14 +72,14 @@ const initialRaces: Race[] = [
   {id:10,round:10,name:"GP de Madrid",circuit:"Madring — Madrid",date:"11–13 set 2026",status:"Programada"}
 ];
 
-const teamDetails: Record<string, { power: number; downforce: number }> = {
+export const teamDetails: Record<string, { power: number; downforce: number }> = {
   cam:{power:70,downforce:70},tri:{power:70,downforce:70},mp:{power:70,downforce:70},
   art:{power:70,downforce:70},var:{power:70,downforce:70},rod:{power:70,downforce:70},
   pre:{power:70,downforce:70},hit:{power:70,downforce:70},aix:{power:70,downforce:70},
   dam:{power:70,downforce:70},
 };
 
-const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
+export const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Théophile Naël": { age:17, attributes:{racePace:64,qualifying:63,overtaking:65,defending:62,consistency:61} },
   "Ugo Ugochukwu": { age:18, attributes:{racePace:62,qualifying:61,overtaking:63,defending:60,consistency:59} },
   "Ernesto Rivera": { age:19, attributes:{racePace:60,qualifying:59,overtaking:62,defending:58,consistency:57} },
