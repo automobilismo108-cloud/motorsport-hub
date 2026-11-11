@@ -90,9 +90,9 @@ const initialMoves: Move[] = [
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
-  const [drivers, setDrivers] = useCloudState<Driver[]>("workspace:drivers", initialDrivers, "motorsport-hub:workspace:v1", migrateDrivers);
+  const [drivers, setDrivers, driversReady] = useCloudState<Driver[]>("workspace:drivers", initialDrivers, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
-  const [moves, setMoves] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
+  const [moves, setMoves, movesReady] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
@@ -130,6 +130,8 @@ export default function Home() {
     {label:"Equipes",icon:Shield},
     {label:"Mercado",icon:ArrowLeftRight},
   ];
+
+  if (!driversReady || !movesReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
