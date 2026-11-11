@@ -134,7 +134,7 @@ export default function Formula2Championship() {
   const completed=races.filter(r=>results.some(x=>x.raceId===r.id)).length;
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const licenseWindow = getSuperLicenseWindow();
-  const seasonAlreadyFinalized = normalizedLicenseAwards.some(a => a.category === "F2" && a.season === ACTIVE_SEASON);
+  const seasonAlreadyFinalized = licenseAwards.some(a => a.category === "F2" && a.season === ACTIVE_SEASON && typeof a.driverKey === "string" && a.driverKey.length > 0);
   const seasonComplete = races.length > 0 && races.every(r =>
     (["Sprint", "Feature"] as const).every(kind =>
       drivers.every(d => results.some(x => x.raceId === r.id && x.session === kind && x.driverId === d.id))
