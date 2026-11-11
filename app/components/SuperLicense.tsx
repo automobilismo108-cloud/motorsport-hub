@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useCloudState } from "@/lib/useCloudState";
-import { drivers as f2Drivers } from "./Formula2Championship";
-import { drivers as f3Drivers } from "./Formula3Championship";
+import { initialF2Drivers as f2Drivers } from "./Formula2Championship";
+import { initialF3Drivers as f3Drivers } from "./Formula3Championship";
 import { BadgeCheck, Clock3, ShieldCheck, Trophy } from "lucide-react";
 
 type Race = { id: number; status: "Programada" | "Concluída" };
