@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCloudState } from "@/lib/useCloudState";
 import Championship from "./components/Championship";
+import Formula2Championship from "./components/Formula2Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
@@ -98,6 +99,7 @@ const migrateMoves = (legacy: any): Move[] | undefined =>
 
 const registeredChampionships = [
   { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
+  { id:"f2", name:"FIA Formula 2 Championship", category:"Fórmula 2", season:"2026", organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:14 },
 ];
 
 const initialMoves: Move[] = [
@@ -180,6 +182,7 @@ export default function Home() {
 
           {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
           {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} settingsOnly={section==="Configurações"}/></>}
+          {section==="Campeonatos" && selectedChampionship==="f2" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula2Championship/></>}
           {profileDriver && <div className="driver-profile-page">
             <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><ArrowLeft size={15}/> Voltar</button>
             <div className="panel driver-profile-hero">
