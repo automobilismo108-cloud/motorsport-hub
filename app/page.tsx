@@ -252,19 +252,17 @@ export default function Home() {
     if (occupied>=2) { setNotice(target.name+" já tem dois pilotos ativos. Escolha outra equipe ou libere uma vaga."); return; }
 
     move.to = target.name+" · "+destinationCategory;
-    setMarketState(old => {
-      const keyFor = (category:"F1"|"F2"|"F3") => category==="F1" ? "f1" : category==="F2" ? "f2" : "f3";
-      const sourceKey = keyFor(sourceCategory);
-      const targetKey = keyFor(destinationCategory);
-      if (sourceCategory===destinationCategory) {
-        const sourceAfter=marketState[sourceKey].map(d=>d.id===sourceId ? {...d,teamId:target.id} : d);
-        const academy=(sourceCategory==="F2"||sourceCategory==="F3")
-          ? createAcademyFill(sourceCategory,driver.teamId,sourceAfter,[...marketState.f1,...marketState.f2,...marketState.f3])
-          : {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
-        setMarketState(old=>({...old,[sourceKey]:[...sourceAfter,...academy.drivers],moves:[move,...old.moves]}));
-        if(Object.keys(academy.development).length) setDevelopment(current=>({...current,...academy.development}));
-        return;
-      }
+    const keyFor = (category:"F1"|"F2"|"F3") => category==="F1" ? "f1" : category==="F2" ? "f2" : "f3";
+    const sourceKey = keyFor(sourceCategory);
+    const targetKey = keyFor(destinationCategory);
+    if (sourceCategory===destinationCategory) {
+      const sourceAfter=marketState[sourceKey].map(d=>d.id===sourceId ? {...d,teamId:target.id} : d);
+      const academy=(sourceCategory==="F2"||sourceCategory==="F3")
+        ? createAcademyFill(sourceCategory,driver.teamId,sourceAfter,[...marketState.f1,...marketState.f2,...marketState.f3])
+        : {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
+      setMarketState(old=>({...old,[sourceKey]:[...sourceAfter,...academy.drivers],moves:[move,...old.moves]}));
+      if(Object.keys(academy.development).length) setDevelopment(current=>({...current,...academy.development}));
+    } else {
       const archived = marketState[sourceKey].map(d=>d.id===sourceId ? {...d,status:"Transferido" as const} : d);
       const academy=(sourceCategory==="F2"||sourceCategory==="F3")
         ? createAcademyFill(sourceCategory,driver.teamId,archived,[...marketState.f1,...marketState.f2,...marketState.f3])
@@ -276,7 +274,7 @@ export default function Home() {
       };
       setMarketState(old=>({...old,[sourceKey]:[...archived,...academy.drivers],[targetKey]:[...old[targetKey],promoted],moves:[move,...old.moves]}));
       if(Object.keys(academy.development).length) setDevelopment(current=>({...current,...academy.development}));
-    });
+    }
     setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
     setNotice("Movimentação concluída: "+driver.name+" · "+sourceCategory+" → "+destinationCategory+".");
   };
