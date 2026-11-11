@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { ACTIVE_SEASON } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
+import { useTransferMarketState, type TransferDriver } from "@/lib/useTransferMarketState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
 import Formula2Championship, { initialF2Drivers, f2Teams, type Driver as F2Driver } from "./components/Formula2Championship";
@@ -115,11 +116,20 @@ const initialMoves: Move[] = [
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
-  const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDriversSeed, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
-  const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
-  const [f2Drivers,setF2Drivers,f2DriversReady,f2DriversError] = useCloudState<F2Driver[]>("workspace:f2:drivers",initialF2Drivers);
-  const [f3Drivers,setF3Drivers,f3DriversReady,f3DriversError] = useCloudState<F3Driver[]>("workspace:f3:drivers",initialF3Drivers);
+  const [marketState,setMarketState,marketReady,marketError] = useTransferMarketState({
+    f1: initialDriversSeed, f2: initialF2Drivers, f3: initialF3Drivers, moves: initialMoves
+  });
+  const drivers = marketState.f1 as Driver[];
+  const f2Drivers = marketState.f2 as F2Driver[];
+  const f3Drivers = marketState.f3 as F3Driver[];
+  const moves = marketState.moves as Move[];
+  const setF2Drivers: Dispatch<SetStateAction<F2Driver[]>> = action => setMarketState(old => ({
+    ...old, f2: typeof action === "function" ? (action as (value:F2Driver[])=>F2Driver[])(old.f2 as F2Driver[]) : action as TransferDriver[]
+  }));
+  const setF3Drivers: Dispatch<SetStateAction<F3Driver[]>> = action => setMarketState(old => ({
+    ...old, f3: typeof action === "function" ? (action as (value:F3Driver[])=>F3Driver[])(old.f3 as F3Driver[]) : action as TransferDriver[]
+  }));
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
@@ -146,58 +156,90 @@ export default function Home() {
   ), [drivers, search, teams]);
 
   const allMarketDrivers = [
-    ...drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
-    ...f2Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
-    ...f3Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
+    ...drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F1" as const, selectionId:"F1|"+d.id })),
+    ...f2Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F2" as const, selectionId:"F2|"+d.id })),
+    ...f3Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F3" as const, selectionId:"F3|"+d.id })),
   ];
   const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
     (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
   const doTransfer = () => {
-    const [sourceCategory,sourceId] = selectedDriver.split(":") as ["F1"|"F2"|"F3",string];
-    const driver = allMarketDrivers.find(d=>d.category===sourceCategory && d.id===sourceId);
-    if (!driver) return;
+    const separator = selectedDriver.indexOf("|");
+    if (separator < 0) { setNotice("Selecione um piloto válido."); return; }
+    const sourceCategory = selectedDriver.slice(0,separator) as "F1"|"F2"|"F3";
+    const sourceId = selectedDriver.slice(separator+1);
+    const sourceList = sourceCategory==="F1" ? marketState.f1 : sourceCategory==="F2" ? marketState.f2 : marketState.f3;
+    const driver = sourceList.find(d=>d.id===sourceId && d.status!=="Transferido" && d.status!=="Aposentado");
+    if (!driver) { setNotice("Este piloto não está mais disponível no elenco. Atualize a página e tente novamente."); return; }
+
     const from = marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
+    const move = {
+      id: Date.now(), driver: driver.name, from,
+      to: destinationCategory==="RETIRE" ? "Aposentadoria" : "",
+      date: "Temporada "+ACTIVE_SEASON, status: "Concluída",
+      category: sourceCategory+" → "+destinationCategory
+    };
+
     if (destinationCategory==="RETIRE") {
-      if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Aposentado"}:d));
-      if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Aposentado"}:d));
-      if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Aposentado"}:d));
-      setMoves(old=>[{id:Date.now(),driver:driver.name,from,to:"Aposentadoria",date:"Temporada "+ACTIVE_SEASON,status:"Concluída",category:sourceCategory+" → Aposentadoria"},...old]);
+      setMarketState(old => {
+        const key = sourceCategory==="F1" ? "f1" : sourceCategory==="F2" ? "f2" : "f3";
+        return {
+          ...old,
+          [key]: old[key].map(d=>d.id===sourceId ? {...d,status:"Aposentado" as const} : d),
+          moves:[move,...old.moves]
+        };
+      });
       setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
-      setNotice(driver.name+" foi aposentado. Seu histórico foi preservado.");
-      setSection("Mercado");
+      setNotice(driver.name+" foi aposentado. O registro e os resultados anteriores foram preservados.");
       return;
     }
+
     const targetTeams = destinationCategory==="F1"?teams:destinationCategory==="F2"?f2Teams:f3Teams;
     const target = targetTeams.find(t=>t.id===destination);
-    if (!target) return;
-    const order = {F3:3,F2:2,F1:1};
-    if (order[destinationCategory] > order[sourceCategory]) { setNotice("Não são permitidos rebaixamentos entre categorias."); return; }
-    if (sourceCategory==="F3" && destinationCategory==="F1") { setNotice("A promoção deve seguir a hierarquia: primeiro F3 → F2 e depois F2 → F1."); return; }
-    if (sourceCategory===destinationCategory && driver.teamId===target.id) { setNotice("Este piloto já pertence a essa equipe."); return; }
-    const occupants = destinationCategory==="F1"
-      ? drivers.filter(d=>d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado")
-      : destinationCategory==="F2"
-        ? f2Drivers.filter(d=>d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado")
-        : f3Drivers.filter(d=>d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado");
-    if (occupants.length >= 2) { setNotice(target.name+" já possui dois pilotos. Libere uma vaga antes de concluir."); return; }
-    const to = target.name+" · "+destinationCategory;
-    if (sourceCategory===destinationCategory) {
-      if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
-      if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
-      if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,teamId:target.id}:d));
-    } else {
-      if(sourceCategory==="F1") setDrivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
-      if(sourceCategory==="F2") setF2Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
-      if(sourceCategory==="F3") setF3Drivers(old=>old.map(d=>d.id===sourceId?{...d,status:"Transferido"}:d));
-      const base = {licenseId:driver.licenseId ?? "driver:"+driver.name.toLowerCase().replace(/[^a-z0-9]+/g,"-"),name:driver.name,country:driver.country,number:driver.number,teamId:target.id};
-      if(destinationCategory==="F1") setDrivers(old=>[...old,{...base,id:"transfer-"+base.licenseId.replace("driver:",""),status:"Titular"}]);
-      if(destinationCategory==="F2") setF2Drivers(old=>[...old,{...base,id:"f2-transfer-"+base.licenseId.replace("driver:","")}]);
-      if(destinationCategory==="F3") setF3Drivers(old=>[...old,{...base,id:"f3-transfer-"+base.licenseId.replace("driver:","")}]);
+    if (!target) { setNotice("Selecione uma equipe de destino."); return; }
+
+    const hierarchy = {F1:3,F2:2,F3:1};
+    if (hierarchy[destinationCategory] < hierarchy[sourceCategory]) {
+      setNotice("Rebaixamentos não são permitidos. A hierarquia é F3 → F2 → F1."); return;
     }
-    setMoves(old=>[{id:Date.now(),driver:driver.name,from,to,date:"Temporada "+ACTIVE_SEASON,status:"Concluída",category:sourceCategory+" → "+destinationCategory},...old]);
+    if (sourceCategory==="F3" && destinationCategory==="F1") {
+      setNotice("A promoção precisa passar pela Fórmula 2: F3 → F2 → F1."); return;
+    }
+    if (sourceCategory===destinationCategory && driver.teamId===target.id) {
+      setNotice("Este piloto já pertence a essa equipe."); return;
+    }
+
+    const destinationRoster = destinationCategory==="F1" ? marketState.f1 : destinationCategory==="F2" ? marketState.f2 : marketState.f3;
+    const occupied = destinationRoster.filter(d =>
+      d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado" &&
+      !(sourceCategory===destinationCategory && d.id===sourceId)
+    ).length;
+    if (occupied>=2) { setNotice(target.name+" já tem dois pilotos ativos. Escolha outra equipe ou libere uma vaga."); return; }
+
+    move.to = target.name+" · "+destinationCategory;
+    setMarketState(old => {
+      const keyFor = (category:"F1"|"F2"|"F3") => category==="F1" ? "f1" : category==="F2" ? "f2" : "f3";
+      const sourceKey = keyFor(sourceCategory);
+      const targetKey = keyFor(destinationCategory);
+      if (sourceCategory===destinationCategory) {
+        return {
+          ...old,
+          [sourceKey]: old[sourceKey].map(d=>d.id===sourceId ? {...d,teamId:target.id} : d),
+          moves:[move,...old.moves]
+        };
+      }
+      const archived = old[sourceKey].map(d=>d.id===sourceId ? {...d,status:"Transferido" as const} : d);
+      const targetId = "move-"+Date.now()+"-"+(driver.licenseId ?? driver.id).replace(/[^a-zA-Z0-9_-]/g,"");
+      const promoted: TransferDriver = {
+        ...driver, id: targetId, licenseId: driver.licenseId ?? "driver:"+driver.id,
+        teamId: target.id, status: destinationCategory==="F1" ? "Titular" : "Ativo"
+      };
+      return {
+        ...old, [sourceKey]: archived, [targetKey]: [...old[targetKey],promoted],
+        moves:[move,...old.moves]
+      };
+    });
     setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
-    setNotice("Transferência concluída: "+driver.name+" · "+sourceCategory+" → "+destinationCategory+".");
-    setSection("Mercado");
+    setNotice("Movimentação concluída: "+driver.name+" · "+sourceCategory+" → "+destinationCategory+".");
   };
 
   const nav = [
@@ -207,8 +249,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError || developmentError || f2DriversError || f3DriversError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || developmentError || f2DriversError || f3DriversError}</div>;
-  if (!driversReady || !movesReady || !developmentReady || !f2DriversReady || !f3DriversReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (marketError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{marketError || developmentError}</div>;
+  if (!marketReady || !developmentReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
