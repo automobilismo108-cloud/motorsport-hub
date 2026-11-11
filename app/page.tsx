@@ -210,7 +210,7 @@ export default function Home() {
               <div className="driver-facts-grid">
                 <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
                 <div className="panel driver-fact"><span>STATUS</span><b>{profileHasLegacyF1Seat?"Vaga F1 preexistente":profileLicenseEligible?"Requisito atingido":"Não pode disputar a F1"}</b></div>
-                <div className="panel driver-fact"><span>IDENTIDADE</span><b>{profileLicenseKey ?? "Não vinculada"}</b></div>
+                <div className="panel driver-fact"><span>VALIDADE</span><b>Janela móvel de 3 temporadas</b></div>
               </div>
             </div>
             <div className="panel driver-attributes-panel">
