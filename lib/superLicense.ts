@@ -65,9 +65,8 @@ function compareSeasonDrivers(
   if (a.points !== b.points) return b.points - a.points;
   if (a.wins !== b.wins) return b.wins - a.wins;
   if (a.podiums !== b.podiums) return b.podiums - a.podiums;
-  for (let i = 1; i < a.positions.length; i += 1) {
-    if (a.positions[i] !== b.positions[i]) return b.positions[i] - a.positions[i];
-  }
+  if (a.positions[1] !== b.positions[1]) return b.positions[1] - a.positions[1];
+  if (a.positions[2] !== b.positions[2]) return b.positions[2] - a.positions[2];
   return 0;
 }
 
