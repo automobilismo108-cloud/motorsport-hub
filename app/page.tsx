@@ -210,14 +210,13 @@ export default function Home() {
     };
 
     if (destinationCategory==="RETIRE") {
-      setMarketState(old => {
-        const key = sourceCategory==="F1" ? "f1" : sourceCategory==="F2" ? "f2" : "f3";
-        return {
-          ...old,
-          [key]: old[key].map(d=>d.id===sourceId ? {...d,status:"Aposentado" as const} : d),
-          moves:[move,...old.moves]
-        };
-      });
+      const key = sourceCategory==="F1" ? "f1" : sourceCategory==="F2" ? "f2" : "f3";
+      const sourceAfter = marketState[key].map(d=>d.id===sourceId ? {...d,status:"Aposentado" as const} : d);
+      const academy = sourceCategory==="F2" || sourceCategory==="F3"
+        ? createAcademyFill(sourceCategory,driver.teamId,sourceAfter,[...marketState.f1,...marketState.f2,...marketState.f3])
+        : {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
+      setMarketState(old=>({...old,[key]:[...sourceAfter,...academy.drivers],moves:[move,...old.moves]}));
+      if(Object.keys(academy.development).length) setDevelopment(old=>({...old,...academy.development}));
       setModal(false);setSelectedDriver("");setDestination("");setDestinationCategory("F1");
       setNotice(driver.name+" foi aposentado. O registro e os resultados anteriores foram preservados.");
       return;
@@ -258,20 +257,25 @@ export default function Home() {
       const sourceKey = keyFor(sourceCategory);
       const targetKey = keyFor(destinationCategory);
       if (sourceCategory===destinationCategory) {
-        return {
-          ...old,
-          [sourceKey]: old[sourceKey].map(d=>d.id===sourceId ? {...d,teamId:target.id} : d),
-          moves:[move,...old.moves]
-        };
+        const sourceAfter=old[sourceKey].map(d=>d.id===sourceId ? {...d,teamId:target.id} : d);
+        const academy=(sourceCategory==="F2"||sourceCategory==="F3")
+          ? createAcademyFill(sourceCategory,driver.teamId,sourceAfter,[...old.f1,...old.f2,...old.f3])
+          : {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
+        if(Object.keys(academy.development).length) setDevelopment(current=>({...current,...academy.development}));
+        return {...old,[sourceKey]:[...sourceAfter,...academy.drivers],moves:[move,...old.moves]};
       }
       const archived = old[sourceKey].map(d=>d.id===sourceId ? {...d,status:"Transferido" as const} : d);
+      const academy=(sourceCategory==="F2"||sourceCategory==="F3")
+        ? createAcademyFill(sourceCategory,driver.teamId,archived,[...old.f1,...old.f2,...old.f3])
+        : {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
       const targetId = "move-"+Date.now()+"-"+(driver.licenseId ?? driver.id).replace(/[^a-zA-Z0-9_-]/g,"");
       const promoted: TransferDriver = {
         ...driver, id: targetId, licenseId: driver.licenseId ?? "driver:"+driver.id,
         teamId: target.id, status: destinationCategory==="F1" ? "Titular" : "Ativo"
       };
+      if(Object.keys(academy.development).length) setDevelopment(current=>({...current,...academy.development}));
       return {
-        ...old, [sourceKey]: archived, [targetKey]: [...old[targetKey],promoted],
+        ...old, [sourceKey]: [...archived,...academy.drivers], [targetKey]: [...old[targetKey],promoted],
         moves:[move,...old.moves]
       };
     });
