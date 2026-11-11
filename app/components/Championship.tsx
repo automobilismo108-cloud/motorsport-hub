@@ -43,8 +43,8 @@ const initialRaces: Race[] = [
 
 export default function Championship({drivers,teams,settingsOnly=false}:{drivers:Driver[];teams:Team[];settingsOnly?:boolean}) {
   const [tab,setTab]=useState<"classificacao"|"calendario"|"resultados">("classificacao");
-  const [races,setRaces]=useState(initialRaces);
-  const [results,setResults]=useState<Result[]>([]);
+  const [races,setRaces,racesReady,racesError]=useCloudState<Race[]>("championship:f1:2026:races",initialRaces);
+  const [results,setResults,resultsReady,resultsError]=useCloudState<Result[]>("championship:f1:2026:results",[]);
   const [raceId,setRaceId]=useState("1");
   const [draftResults,setDraftResults]=useState<Record<string,{position:string;status:string}>>({});
   const [showRace,setShowRace]=useState(false);
@@ -104,6 +104,9 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   const raceResults=results.filter(r=>r.raceId===Number(raceId));
   const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
   const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
+
+  if(racesError||resultsError) return <div className="notice">Não foi possível sincronizar os dados da Fórmula 1. Seus dados não foram sobrescritos; verifique a conexão com o Supabase e tente novamente.</div>;
+  if(!racesReady||!resultsReady) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 1...</div>;
 
   if(settingsOnly) return <div className="championship-module">
     <div className="panel settings-reset-panel">
