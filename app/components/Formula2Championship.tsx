@@ -181,6 +181,6 @@ export default function Formula2Championship() {
       <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados da corrida selecionada</h2><p>{selectedRace?.name} · {session==="Sprint"?"Sprint Race":"Feature Race"}</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{sessionResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta corrida.</td></tr>:sessionResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(r.driverId)}>{drivers.find(d=>d.id===r.driverId)?.name??"Piloto removido"}</button></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
     </div>}
     <div className="champ-footnote"><Medal size={14}/> Pontuação padrão: Sprint 10–8–6–5–4–3–2–1 · Feature 25–18–15–12–10–8–6–4–2–1. Resultados inseridos manualmente para sua simulação.</div>
-  </div>    </>}
+    </>}
   </div>;
 }
