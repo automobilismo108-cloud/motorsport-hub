@@ -66,10 +66,10 @@ const initialRaces: Race[] = [
 ];
 
 const teamDetails: Record<string, { power: number; downforce: number }> = {
-  inv:{power:84,downforce:82}, hit:{power:81,downforce:83}, cam:{power:84,downforce:81},
-  dam:{power:79,downforce:80}, mp:{power:82,downforce:82}, pre:{power:80,downforce:81},
-  rod:{power:83,downforce:84}, art:{power:81,downforce:82}, aix:{power:73,downforce:74},
-  var:{power:78,downforce:79}, tri:{power:79,downforce:80},
+  inv:{power:80,downforce:80}, hit:{power:80,downforce:80}, cam:{power:80,downforce:80},
+  dam:{power:80,downforce:80}, mp:{power:80,downforce:80}, pre:{power:80,downforce:80},
+  rod:{power:80,downforce:80}, art:{power:80,downforce:80}, aix:{power:80,downforce:80},
+  var:{power:80,downforce:80}, tri:{power:80,downforce:80},
 };
 
 const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
