@@ -20,6 +20,7 @@ export function useCloudState<T>(
   useEffect(() => {
     let cancelled = false;
     setReady(false);
+    setSyncError(null);
     if (!user || !supabase) return;
 
     const load = async () => {
@@ -55,7 +56,10 @@ export function useCloudState<T>(
         if (!cancelled) setReady(true);
       } catch (loadError) {
         console.error("Falha ao carregar os dados da nuvem. Confira a configuração do Supabase e as políticas RLS.", loadError);
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setSyncError(loadError instanceof Error ? loadError.message : "Falha ao carregar dados da nuvem.");
+          setReady(true);
+        }
       }
     };
 
@@ -64,16 +68,19 @@ export function useCloudState<T>(
   }, [user?.id, dataKey]);
 
   useEffect(() => {
-    if (!ready || !user || !supabase) return;
+    if (!ready || syncError || !user || !supabase) return;
     const save = async () => {
       const { error } = await supabase!
         .from("workspace_data")
         .upsert({ user_id: user.id, data_key: dataKey, payload: value }, { onConflict: "user_id,data_key" });
-      if (error) console.error("Falha ao salvar dados na nuvem.", error);
+      if (error) {
+        console.error("Falha ao salvar dados na nuvem.", error);
+        setSyncError(error.message);
+      }
 
     };
     void save();
-  }, [value, ready, user?.id, dataKey]);
+  }, [value, ready, syncError, user?.id, dataKey]);
 
   return [value, setValue, ready, syncError];
 }
