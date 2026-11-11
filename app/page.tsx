@@ -212,7 +212,7 @@ export default function Home() {
   const profileDriver = profileDrivers.find(d => d.id === profileDriverId);
   const profileTeam = profileTeams.find(t => t.id === profileTeamId);
   const profileTeamDrivers = profileTeam ? profileDrivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
-  const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : profileTeam?.headquarters;
+  const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : (profileTeam && "headquarters" in profileTeam ? profileTeam.headquarters : undefined);
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
