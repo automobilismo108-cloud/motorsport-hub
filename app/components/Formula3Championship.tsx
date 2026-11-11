@@ -219,7 +219,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
       <div className="driver-facts-grid">
         <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
         <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
-        {profileDriver.isFictional && <div className="panel driver-fact"><span>ORIGEM</span><b>PILOTO FICTÍCIO · ACADEMIA</b></div>
+        {profileDriver.isFictional && <div className="panel driver-fact"><span>ORIGEM</span><b>PILOTO FICTÍCIO · ACADEMIA</b></div>}
         <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
         <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>{profileLicensePoints >= 40 ? "COMPLETO" : `${profileLicensePoints} / 40 PTS`}</b></div>
       </div>
