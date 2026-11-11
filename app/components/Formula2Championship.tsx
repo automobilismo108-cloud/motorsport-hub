@@ -5,22 +5,22 @@ import { useCloudState } from "@/lib/useCloudState";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
 type Driver = { id: string; name: string; country: string; number: number; teamId: string };
-type Team = { id: string; name: string; short: string; color: string };
+type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
 
 const teams: Team[] = [
-  {id:"inv",name:"Invicta Racing",short:"INV",color:"#e6c84f"},
-  {id:"hit",name:"Hitech",short:"HIT",color:"#2477c8"},
-  {id:"cam",name:"Campos Racing",short:"CAM",color:"#e23d3d"},
-  {id:"dam",name:"DAMS Lucas Oil",short:"DAMS",color:"#f0f0f0"},
-  {id:"mp",name:"MP Motorsport",short:"MP",color:"#f3a52d"},
-  {id:"pre",name:"PREMA Racing",short:"PRE",color:"#f5f5f5"},
-  {id:"rod",name:"Rodin Motorsport",short:"ROD",color:"#43a6a0"},
-  {id:"art",name:"ART Grand Prix",short:"ART",color:"#6a9bd6"},
-  {id:"aix",name:"AIX Racing",short:"AIX",color:"#d9a7e8"},
-  {id:"var",name:"Van Amersfoort Racing",short:"VAR",color:"#e8e8e8"},
-  {id:"tri",name:"TRIDENT",short:"TRI",color:"#238b5b"},
+  {id:"inv",name:"Invicta Racing",short:"INV",color:"#e6c84f",headquarters:"Attleborough, Norfolk, Reino Unido"},
+  {id:"hit",name:"Hitech",short:"HIT",color:"#2477c8",headquarters:"Silverstone, Northamptonshire, Reino Unido"},
+  {id:"cam",name:"Campos Racing",short:"CAM",color:"#e23d3d",headquarters:"Alzira, Valência, Espanha"},
+  {id:"dam",name:"DAMS Lucas Oil",short:"DAMS",color:"#f0f0f0",headquarters:"Ruaudin (região de Le Mans), França"},
+  {id:"mp",name:"MP Motorsport",short:"MP",color:"#f3a52d",headquarters:"Westmaas, Países Baixos"},
+  {id:"pre",name:"PREMA Racing",short:"PRE",color:"#f5f5f5",headquarters:"Grisignano di Zocco, Vicenza, Itália"},
+  {id:"rod",name:"Rodin Motorsport",short:"ROD",color:"#43a6a0",headquarters:"Farnham, Surrey, Reino Unido"},
+  {id:"art",name:"ART Grand Prix",short:"ART",color:"#6a9bd6",headquarters:"Saint-Pierre-du-Perray, França"},
+  {id:"aix",name:"AIX Racing",short:"AIX",color:"#d9a7e8",headquarters:"Andernach, Alemanha"},
+  {id:"var",name:"Van Amersfoort Racing",short:"VAR",color:"#e8e8e8",headquarters:"Zeewolde, Países Baixos"},
+  {id:"tri",name:"TRIDENT",short:"TRI",color:"#238b5b",headquarters:"Ossona, região de Milão, Itália"},
 ];
 
 const drivers: Driver[] = [
@@ -65,7 +65,7 @@ const initialRaces: Race[] = [
   {id:14,round:14,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
-const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
+const teamDetails: Record<string, { power: number; downforce: number }> = {\n  inv:{power:84,downforce:82}, hit:{power:81,downforce:83}, cam:{power:84,downforce:81},\n  dam:{power:79,downforce:80}, mp:{power:82,downforce:82}, pre:{power:80,downforce:81},\n  rod:{power:83,downforce:84}, art:{power:81,downforce:82}, aix:{power:73,downforce:74},\n  var:{power:78,downforce:79}, tri:{power:79,downforce:80},\n};\n\nconst driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Rafael Câmara": { age:21, attributes:{racePace:84,qualifying:83,overtaking:80,defending:78,consistency:81} },
   "Joshua Dürksen": { age:22, attributes:{racePace:78,qualifying:75,overtaking:81,defending:79,consistency:74} },
   "Ritomo Miyata": { age:27, attributes:{racePace:78,qualifying:76,overtaking:74,defending:77,consistency:79} },
@@ -101,10 +101,10 @@ export default function Formula2Championship() {
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
   const [draft,setDraft] = useState<Record<string,{position:string;status:string}>>({});
   const [notice,setNotice] = useState("");
-  const [profileDriverId,setProfileDriverId] = useState<string | null>(null);
+  const [profileDriverId,setProfileDriverId] = useState<string | null>(null);\n  const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
 
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
-  const profileDriver=drivers.find(d=>d.id===profileDriverId);
+  const profileDriver=drivers.find(d=>d.id===profileDriverId);\n  const profileTeam=teams.find(t=>t.id===profileTeamId);\n  const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
   const profileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
@@ -140,17 +140,17 @@ export default function Formula2Championship() {
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-    {profileDriver ? <div className="driver-profile-page">
+    {profileTeam ? <div className="driver-profile-page">\n      <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><Flag size={15}/> Voltar ao campeonato</button>\n      <div className="panel driver-profile-hero">\n        <div className="driver-profile-number" style={{color:profileTeam.color}}>F2</div>\n        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>\n        <span className="status-tag">EQUIPE F2</span>\n      </div>\n      <div className="driver-facts-grid">\n        <div className="panel driver-fact"><span>SEDE</span><b>{profileTeam.headquarters}</b></div>\n        <div className="panel driver-fact"><span>PILOTOS</span><b>{drivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>\n        <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · 2026</b></div>\n      </div>\n      <div className="panel driver-attributes-panel">\n        <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>\n        <div className="driver-attributes-list">\n          {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileTeamDetails?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileTeamDetails?.[attribute.key] ?? 0}%`}}/></div></div>)}\n        </div>\n      </div>\n      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada 2026</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>\n    </div> : profileDriver ? <div className="driver-profile-page">
       <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number">#{profileDriver.number}</div>
-        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · {teamName(profileDriver.teamId)} · Temporada 2026</p></div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · <button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button> · Temporada 2026</p></div>
         <span className="status-tag">EM DESENVOLVIMENTO</span>
       </div>
       <div className="driver-facts-grid">
         <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
         <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
-        <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b>{teamName(profileDriver.teamId)}</b></div>
+        <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
       </div>
       <div className="panel driver-attributes-panel">
         <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desenvolvimento · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
@@ -166,8 +166,8 @@ export default function Formula2Championship() {
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="champ-standings-grid">
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada nas corridas Sprint e Feature</p></div><span className="status-tag">22 PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/>{teamName(d.teamId)}</span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de equipes</h2><p>Soma dos pontos dos dois pilotos</p></div><span className="status-tag">11 EQUIPES</span></div><div className="constructor-list">{teamStandings.map((t,i)=><div className="constructor-row" key={t.id}><b className="champ-position">{String(i+1).padStart(2,"0")}</b><i style={{background:t.color}}/><span>{t.name}</span><strong>{t.points} <small>PTS</small></strong></div>)}</div></div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada nas corridas Sprint e Feature</p></div><span className="status-tag">22 PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(d.teamId)}>{teamName(d.teamId)}</button></span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de equipes</h2><p>Soma dos pontos dos dois pilotos</p></div><span className="status-tag">11 EQUIPES</span></div><div className="constructor-list">{teamStandings.map((t,i)=><div className="constructor-row" key={t.id}><b className="champ-position">{String(i+1).padStart(2,"0")}</b><i style={{background:t.color}}/><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(t.id)}>{t.name}</button><strong>{t.points} <small>PTS</small></strong></div>)}</div></div>
     </div>}
     {tab==="calendario"&&<div className="panel table-panel"><div className="panel-head"><div><h2>Calendário da temporada</h2><p>14 etapas · 28 corridas · Sprint e Feature</p></div></div><div className="table-wrap"><table><thead><tr><th>RODADA</th><th>ETAPA</th><th>CIRCUITO</th><th>DATA</th><th>STATUS</th></tr></thead><tbody>{races.slice().sort((a,b)=>a.round-b.round).map(r=><tr key={r.id}><td><b>R{String(r.round).padStart(2,"0")}</b></td><td><b>{r.name}</b></td><td>{r.circuit}</td><td>{r.date}</td><td><span className={r.status==="Concluída"?"status-tag":"race-pending"}>{r.status}</span></td></tr>)}</tbody></table></div></div>}
     {tab==="resultados"&&<div className="champ-results-workspace">
@@ -175,10 +175,10 @@ export default function Formula2Championship() {
         <div className="panel-head result-panel-heading"><div><h2>Lançar resultado da corrida</h2><p>Selecione a etapa e o tipo de corrida para registrar a classificação.</p></div><span className="status-tag">{sessionResults.length} REGISTRADOS</span></div>
         <div className="result-event-picker"><label>ETAPA DA TEMPORADA<select value={raceId} onChange={e=>{setRaceId(e.target.value);setDraft({});}}>{races.slice().sort((a,b)=>a.round-b.round).map(r=><option key={r.id} value={r.id}>R{String(r.round).padStart(2,"0")} · {r.name} — {r.circuit}</option>)}</select></label><label style={{maxWidth:190}}>TIPO DE CORRIDA<select value={session} onChange={e=>{setSession(e.target.value as "Sprint"|"Feature");setDraft({});}}><option value="Sprint">Sprint Race</option><option value="Feature">Feature Race</option></select></label><div className="result-event-meta"><span>{selectedRace?.date}</span><span>{remaining.length} pendentes</span></div></div>
         <div className="result-bulk-toolbar"><div><b>Ordem de chegada · {session==="Sprint"?"Sprint Race":"Feature Race"}</b><small>Deixe em branco quem ainda não deseja registrar.</small></div><span>{filled} preenchidos</span></div>
-        <div className="result-driver-list">{remaining.map(d=>{const item=draft[d.id]??{position:"",status:"Classificado"};const scale=session==="Sprint"?sprintPoints:featurePoints;const pts=item.status==="Classificado"&&item.position!==""&&Number(item.position)<=scale.length?scale[Number(item.position)-1]:0;return <div className="result-driver-row" key={d.id}><div className="result-driver-identity"><span className="driver-number">{d.number}</span><div><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button><small>{teamName(d.teamId)}</small></div></div><label className="result-position-field"><span>POSIÇÃO</span><select value={item.position} onChange={e=>setDraft(old=>({...old,[d.id]:{...item,position:e.target.value}}))}><option value="">—</option>{Array.from({length:22},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}º</option>)}</select></label><label className="result-status-field"><span>SITUAÇÃO</span><select value={item.status} onChange={e=>setDraft(old=>({...old,[d.id]:{...item,status:e.target.value}}))}><option>Classificado</option><option>Abandono</option><option>Desclassificado</option><option>Não largou</option></select></label><b className="result-row-points">{pts} <small>PTS</small></b></div>})}{remaining.length===0&&<div className="all-results-done"><Check size={17}/> Todos os pilotos já possuem resultado nesta corrida.</div>}</div>
+        <div className="result-driver-list">{remaining.map(d=>{const item=draft[d.id]??{position:"",status:"Classificado"};const scale=session==="Sprint"?sprintPoints:featurePoints;const pts=item.status==="Classificado"&&item.position!==""&&Number(item.position)<=scale.length?scale[Number(item.position)-1]:0;return <div className="result-driver-row" key={d.id}><div className="result-driver-identity"><span className="driver-number">{d.number}</span><div><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button><small><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(d.teamId)}>{teamName(d.teamId)}</button></small></div></div><label className="result-position-field"><span>POSIÇÃO</span><select value={item.position} onChange={e=>setDraft(old=>({...old,[d.id]:{...item,position:e.target.value}}))}><option value="">—</option>{Array.from({length:22},(_,i)=><option key={i+1} value={String(i+1)}>{i+1}º</option>)}</select></label><label className="result-status-field"><span>SITUAÇÃO</span><select value={item.status} onChange={e=>setDraft(old=>({...old,[d.id]:{...item,status:e.target.value}}))}><option>Classificado</option><option>Abandono</option><option>Desclassificado</option><option>Não largou</option></select></label><b className="result-row-points">{pts} <small>PTS</small></b></div>})}{remaining.length===0&&<div className="all-results-done"><Check size={17}/> Todos os pilotos já possuem resultado nesta corrida.</div>}</div>
         <div className="result-bulk-footer"><span>Pontuação padrão: Sprint 10–8–6–5–4–3–2–1 · Feature 25–18–15–12–10–8–6–4–2–1.</span><button className="primary-button" disabled={!filled} onClick={saveResults}><Check size={16}/> Salvar {filled||""} resultado(s)</button></div>
       </div>
-      <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados da corrida selecionada</h2><p>{selectedRace?.name} · {session==="Sprint"?"Sprint Race":"Feature Race"}</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{sessionResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta corrida.</td></tr>:sessionResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(r.driverId)}>{drivers.find(d=>d.id===r.driverId)?.name??"Piloto removido"}</button></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
+      <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados da corrida selecionada</h2><p>{selectedRace?.name} · {session==="Sprint"?"Sprint Race":"Feature Race"}</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{sessionResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta corrida.</td></tr>:sessionResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(r.driverId)}>{drivers.find(d=>d.id===r.driverId)?.name??"Piloto removido"}</button></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(drivers.find(d=>d.id===r.driverId)?.teamId??"")}>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</button></td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
     </div>}
     <div className="champ-footnote"><Medal size={14}/> Pontuação padrão: Sprint 10–8–6–5–4–3–2–1 · Feature 25–18–15–12–10–8–6–4–2–1. Resultados inseridos manualmente para sua simulação.</div>
     </>}
