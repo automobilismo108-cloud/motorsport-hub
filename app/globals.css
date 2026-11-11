@@ -49,3 +49,19 @@
 
 /* Navegação para ficha individual de piloto */
 .driver-name-link{display:inline;padding:0;border:0;background:transparent;color:#e8edf4;text-align:left;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;transition:color .15s ease}.driver-name-link:hover{color:#ffad4d;text-decoration:underline;text-underline-offset:3px}.team-driver-link{margin-right:7px}.team-driver-link:not(:last-child)::after{content:" ·";color:#718093;text-decoration:none}.driver-profile-page{display:flex;flex-direction:column;gap:15px}.driver-profile-hero{display:flex;align-items:center;gap:18px;padding:24px}.driver-profile-number{display:grid;place-items:center;min-width:76px;height:76px;border-radius:12px;background:#242c36;border:1px solid #394656;color:#ffad4d;font:700 25px 'Space Grotesk'}.driver-profile-heading{flex:1}.driver-profile-heading .eyebrow{color:#ffad4d;font-size:9px;letter-spacing:1.4px}.driver-profile-heading h2{margin:6px 0;font:600 24px 'Space Grotesk';color:#f1f4f8}.driver-profile-heading p{margin:0;color:#8794a4;font-size:11px}.driver-profile-placeholder{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px}.driver-profile-placeholder>svg{color:#ffad4d;margin-bottom:8px}.driver-profile-placeholder h3{margin:5px 0;color:#eef2f7;font:600 16px 'Space Grotesk'}.driver-profile-placeholder p{max-width:480px;margin:5px 0 16px;color:#8794a4;font-size:11px;line-height:1.7}.driver-profile-placeholder>span{font-size:8px;letter-spacing:1.3px;color:#687789}@media(max-width:600px){.driver-profile-hero{align-items:flex-start;flex-wrap:wrap;padding:16px}.driver-profile-number{min-width:58px;height:58px;font-size:20px}.driver-profile-heading h2{font-size:19px}.driver-profile-hero>.status-tag{width:100%}}
+
+/* Dados e atributos das fichas individuais de pilotos */
+.driver-facts-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.driver-fact{padding:17px 19px;display:flex;flex-direction:column;gap:8px}
+.driver-fact>span{font-size:9px;letter-spacing:1px;color:#8290a1;font-weight:700}
+.driver-fact>b{font:600 16px 'Space Grotesk';color:#edf2f7}
+.driver-attributes-panel{overflow:hidden}
+.driver-attributes-list{padding:8px 20px 17px}
+.driver-attribute-row{padding:12px 0;border-bottom:1px solid #202a35}
+.driver-attribute-row:last-child{border-bottom:0}
+.driver-attribute-row>div:first-child{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.driver-attribute-row b{font-size:11px;color:#cbd4df}
+.driver-attribute-row strong{font:600 12px 'Space Grotesk';color:#ffad4d}
+.driver-attribute-track{height:7px;border-radius:10px;background:#27313d;overflow:hidden}
+.driver-attribute-track i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#a65c20,#ffad4d)}
+@media(max-width:650px){.driver-facts-grid{grid-template-columns:1fr}.driver-fact{padding:14px 16px}.driver-attributes-list{padding:7px 15px 13px}}
