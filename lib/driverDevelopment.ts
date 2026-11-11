@@ -17,7 +17,8 @@ export function getDriverDevelopment(
   if (existing) return existing;
   const age = Math.max(15, base.age + Math.max(0, season - 2026));
   const overall = average(base.attributes);
-  const potential = clamp(Math.max(overall + 2, overall + Math.max(2, Math.min(15, (25 - age) * 0.65 + 5))), 50, 99);
+  const strongestAttribute = Math.max(...ATTRIBUTE_KEYS.map(key => base.attributes[key]));
+  const potential = clamp(Math.max(strongestAttribute, overall + Math.max(2, Math.min(15, (25 - age) * 0.65 + 5))), 50, 100);
   return { attributes: { ...base.attributes }, potential, age, history: [] };
 }
 
