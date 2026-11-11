@@ -112,6 +112,43 @@ const initialMoves: Move[] = [
 const ACADEMY_FIRST_NAMES = ["Lucas","Enzo","Theo","Matteo","Leon","Nicolas","Adrian","Felix","Marco","Daniel","Gabriel","Rafael","Ethan","Oliver","Hugo","Alex","Milan","Arthur","Noah","Luca","Samuel","Diego","Tom","Julian","Mika","Kai","Andre","Bruno","Victor","Sebastian"];
 const ACADEMY_LAST_NAMES = ["Moretti","Silva","Laurent","Weber","Kowalski","Tanaka","Andersen","Costa","Martin","Rossi","Müller","Dubois","Sato","Bianchi","Novak","Ferreira","Schneider","Lindström","Pereira","Ricci","Santos","Nakamura","Petrov","Berg","Almeida","Conti","Yamamoto","Fischer","Mendes","Johansson"];
 const ACADEMY_COUNTRIES = ["Brasil","Itália","França","Alemanha","Polônia","Japão","Dinamarca","Portugal","Reino Unido","Espanha","Suécia","Argentina","Países Baixos","Finlândia","México","Austrália"];
+
+function generateRandomFreeAgents(existing:TransferDriver[]) {
+  const usedNames=new Set(existing.map(d=>d.name));
+  const usedNumbers=new Set(existing.map(d=>d.number).filter(n=>n>=1&&n<=99));
+  const drivers:TransferDriver[]=[];
+  const development:DriverDevelopmentState={};
+  const pick=<T,>(items:readonly T[])=>items[Math.floor(Math.random()*items.length)];
+  const availableNumbers=Array.from({length:99},(_,i)=>i+1).filter(n=>!usedNumbers.has(n));
+  for(let i=0;i<5;i++){
+    let name="";
+    for(let attempt=0;attempt<300;attempt++){
+      const candidate=pick(ACADEMY_FIRST_NAMES)+" "+pick(ACADEMY_LAST_NAMES);
+      if(!usedNames.has(candidate)){name=candidate;break;}
+    }
+    if(!name) throw new Error("Não foi possível gerar cinco nomes inéditos. Tente novamente.");
+    const numberIndex=Math.floor(Math.random()*availableNumbers.length);
+    const number=availableNumbers.splice(numberIndex,1)[0];
+    if(number===undefined) throw new Error("Não há números de carro disponíveis.");
+    const slug=name.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    const licenseId="free-agent:generated:"+Date.now().toString(36)+":"+Math.random().toString(36).slice(2,9)+":"+slug;
+    const base=55+Math.floor(Math.random()*31);
+    const attributes={
+      racePace:Math.min(95,base+Math.floor(Math.random()*9)),
+      qualifying:Math.min(95,base+Math.floor(Math.random()*9)),
+      overtaking:Math.min(95,base+Math.floor(Math.random()*9)),
+      defending:Math.min(95,base+Math.floor(Math.random()*9)),
+      consistency:Math.min(95,base+Math.floor(Math.random()*9))
+    };
+    const age=16+Math.floor(Math.random()*9);
+    const potential=Math.min(99,base+10+Math.floor(Math.random()*16));
+    drivers.push({id:"free-generated-"+licenseId.split(":")[2],licenseId,name,country:pick(ACADEMY_COUNTRIES),number,teamId:"",status:"Ativo",isFictional:true});
+    development[licenseId]={age,potential,attributes,history:[]};
+    usedNames.add(name);usedNumbers.add(number);
+  }
+  return {drivers,development};
+}
+
 function createAcademyFill(category:"F2"|"F3",teamId:string,resultingRoster:TransferDriver[],allDrivers:TransferDriver[]) {
   const activeInTeam=resultingRoster.filter(d=>d.teamId===teamId&&d.status!=="Transferido"&&d.status!=="Aposentado").length;
   const teamCapacity=category==="F3"?3:2;
@@ -481,7 +518,14 @@ export default function Home() {
               <button className={marketTab==="free"?"selected":""} onClick={()=>setMarketTab("free")}><Users size={14}/> Pilotos livres <span className="nav-count">{freeAgents.length}</span></button>
             </div>
             {marketTab==="movements" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Transferências entre equipes, promoções e aposentadorias</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><b>{m.driver}</b></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
-            {marketTab==="free" && <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos livres</h2><p>{freeAgents.length} pilotos sem contrato disponíveis para contratação</p></div><span className="status-tag">20 fictícios iniciais</span></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>CATEGORIA</th><th>IDADE</th><th>POTENCIAL</th><th>STATUS</th><th></th></tr></thead><tbody>{freeAgents.map(d=>{const details=development[d.licenseId??d.id]??INITIAL_FREE_AGENT_POOL.development[d.licenseId??d.id];return <tr key={d.id}><td><b>{d.name}</b><div className="free-agent-origin">Piloto fictício · Academia</div></td><td>{d.country}</td><td>Livre</td><td>{details?.age??"—"}</td><td>{details?.potential??"—"}</td><td><span className="status-tag">Sem contrato</span></td><td><button className="primary-button compact" onClick={()=>{setSelectedDriver("LIVRE|"+d.id);setDestinationCategory("F1");setDestination("");setNotice("");setModal(true)}}><Plus size={14}/> Contratar</button></td></tr>})}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Os pilotos livres não ocupam vagas em equipes. Ao contratar, o piloto sai desta lista e passa a integrar o elenco escolhido. A lista é salva na nuvem.</span></div></div>}
+            {marketTab==="free" && <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos livres</h2><p>{freeAgents.length} pilotos sem contrato disponíveis para contratação</p></div><button className="primary-button compact" disabled={!marketReady||!developmentReady} onClick={()=>{
+              try {
+                const generated=generateRandomFreeAgents([...freeAgents,...drivers,...f2Drivers,...f3Drivers]);
+                setMarketState(old=>({...old,freeAgents:[...old.freeAgents,...generated.drivers]}));
+                setDevelopment(old=>({...old,...generated.development}));
+                setNotice("Cinco novos pilotos fictícios foram adicionados aos agentes livres.");
+              } catch(error) { setNotice(error instanceof Error?error.message:"Não foi possível gerar os pilotos."); }
+            }}><Plus size={15}/> Gerar 5 pilotos</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>CATEGORIA</th><th>IDADE</th><th>POTENCIAL</th><th>STATUS</th><th></th></tr></thead><tbody>{freeAgents.map(d=>{const details=development[d.licenseId??d.id]??INITIAL_FREE_AGENT_POOL.development[d.licenseId??d.id];return <tr key={d.id}><td><b>{d.name}</b><div className="free-agent-origin">Piloto fictício · Academia</div></td><td>{d.country}</td><td>Livre</td><td>{details?.age??"—"}</td><td>{details?.potential??"—"}</td><td><span className="status-tag">Sem contrato</span></td><td><button className="primary-button compact" onClick={()=>{setSelectedDriver("LIVRE|"+d.id);setDestinationCategory("F1");setDestination("");setNotice("");setModal(true)}}><Plus size={14}/> Contratar</button></td></tr>})}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Os pilotos livres não ocupam vagas em equipes. Ao contratar, o piloto sai desta lista e passa a integrar o elenco escolhido. A lista é salva na nuvem.</span></div></div>}
           </>}
           <footer> MOTORSPORT HUB <span>•</span> DADOS DE REFERÊNCIA: TEMPORADA 2026 <span>•</span> PROTÓTIPO 0.1</footer>
         </div>
