@@ -108,6 +108,41 @@ const initialMoves: Move[] = [
   {id:3,driver:"Gabriel Bortoleto",from:"Sauber",to:"Audi",date:"2026",status:"Concluída"},
 ];
 
+
+const ACADEMY_FIRST_NAMES = ["Lucas","Enzo","Theo","Matteo","Leon","Nicolas","Adrian","Felix","Marco","Daniel","Gabriel","Rafael","Ethan","Oliver","Hugo","Alex","Milan","Arthur","Noah","Luca","Samuel","Diego","Tom","Julian","Mika","Kai","Andre","Bruno","Victor","Sebastian"];
+const ACADEMY_LAST_NAMES = ["Moretti","Silva","Laurent","Weber","Kowalski","Tanaka","Andersen","Costa","Martin","Rossi","Müller","Dubois","Sato","Bianchi","Novak","Ferreira","Schneider","Lindström","Pereira","Ricci","Santos","Nakamura","Petrov","Berg","Almeida","Conti","Yamamoto","Fischer","Mendes","Johansson"];
+const ACADEMY_COUNTRIES = ["Brasil","Itália","França","Alemanha","Polônia","Japão","Dinamarca","Portugal","Reino Unido","Espanha","Suécia","Argentina","Países Baixos","Finlândia","México","Austrália"];
+function createAcademyFill(category:"F2"|"F3",teamId:string,resultingRoster:TransferDriver[],allDrivers:TransferDriver[]) {
+  const activeInTeam=resultingRoster.filter(d=>d.teamId===teamId&&d.status!=="Transferido"&&d.status!=="Aposentado").length;
+  if(activeInTeam>0) return {drivers:[] as TransferDriver[],development:{} as DriverDevelopmentState};
+  const usedNames=new Set(allDrivers.map(d=>d.name));
+  const usedNumbers=new Set(allDrivers.filter(d=>d.number>=1&&d.number<=99).map(d=>d.number));
+  const created:TransferDriver[]=[];
+  const records:DriverDevelopmentState={};
+  let candidate=0;
+  while(created.length<2&&candidate<ACADEMY_FIRST_NAMES.length*ACADEMY_LAST_NAMES.length){
+    const first=ACADEMY_FIRST_NAMES[candidate%ACADEMY_FIRST_NAMES.length];
+    const last=ACADEMY_LAST_NAMES[Math.floor(candidate/ACADEMY_FIRST_NAMES.length)];
+    candidate++;
+    const name=first+" "+last;
+    if(usedNames.has(name)) continue;
+    const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    const licenseId="academy:"+category.toLowerCase()+":"+slug;
+    const number=Array.from({length:99},(_,i)=>i+1).find(n=>!usedNumbers.has(n));
+    if(number===undefined) break;
+    const index=created.length;
+    const base=category==="F2"?70:58;
+    const attributes={racePace:base+((candidate*3+index)%8),qualifying:base+((candidate*5+index)%8),overtaking:base+((candidate*7+index)%8),defending:base+((candidate*2+index)%8),consistency:base+((candidate*4+index)%8)};
+    const age=category==="F2"?19+(candidate%5):16+(candidate%4);
+    const potential=Math.min(90,Math.max(category==="F2"?68:62,base+12+((candidate*3)%13)));
+    const id="academy-"+category.toLowerCase()+"-"+teamId+"-"+slug;
+    created.push({id,licenseId,name,country:ACADEMY_COUNTRIES[(candidate*3+index)%ACADEMY_COUNTRIES.length],number,teamId,status:"Ativo",isFictional:true});
+    usedNames.add(name);usedNumbers.add(number);
+    records[licenseId]={age, potential, attributes, history:[]};
+  }
+  return {drivers:created,development:records};
+}
+
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
