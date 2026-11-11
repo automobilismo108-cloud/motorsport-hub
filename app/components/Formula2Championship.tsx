@@ -69,14 +69,14 @@ const initialRaces: Race[] = [
   {id:14,round:14,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
-const teamDetails: Record<string, { power: number; downforce: number }> = {
+export const teamDetails: Record<string, { power: number; downforce: number }> = {
   inv:{power:80,downforce:80}, hit:{power:80,downforce:80}, cam:{power:80,downforce:80},
   dam:{power:80,downforce:80}, mp:{power:80,downforce:80}, pre:{power:80,downforce:80},
   rod:{power:80,downforce:80}, art:{power:80,downforce:80}, aix:{power:80,downforce:80},
   var:{power:80,downforce:80}, tri:{power:80,downforce:80},
 };
 
-const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
+export const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Rafael Câmara": { age:21, attributes:{racePace:84,qualifying:83,overtaking:80,defending:78,consistency:81} },
   "Joshua Dürksen": { age:22, attributes:{racePace:78,qualifying:75,overtaking:81,defending:79,consistency:74} },
   "Ritomo Miyata": { age:27, attributes:{racePace:78,qualifying:76,overtaking:74,defending:77,consistency:79} },
