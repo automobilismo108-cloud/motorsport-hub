@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useCloudState } from "@/lib/useCloudState";
+import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
-type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
 type Team = { id: string; name: string; color: string; short: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; driverId: string; position: number | null; points: number; status: string };
@@ -43,8 +44,9 @@ const initialRaces: Race[] = [
 
 export default function Championship({drivers,teams,settingsOnly=false}:{drivers:Driver[];teams:Team[];settingsOnly?:boolean}) {
   const [tab,setTab]=useState<"classificacao"|"calendario"|"resultados">("classificacao");
-  const [races,setRaces,racesReady,racesError]=useCloudState<Race[]>("championship:f1:2026:races",initialRaces);
-  const [results,setResults,resultsReady,resultsError]=useCloudState<Result[]>("championship:f1:2026:results",[]);
+  const [races,setRaces,racesReady,racesError]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,initialRaces);
+  const [results,setResults,resultsReady,resultsError]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
+  const [licenseAwards,,licenseReady,licenseError]=useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [raceId,setRaceId]=useState("1");
   const [draftResults,setDraftResults]=useState<Record<string,{position:string;status:string}>>({});
   const [showRace,setShowRace]=useState(false);
@@ -55,6 +57,12 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   const [confirmReset,setConfirmReset]=useState(false);
 
 
+  const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
+  const licenseKeyFor = (driver: Driver) => driver.licenseId ?? getLegacyF1LicenseId(driver.id);
+  const isLegacyF1Driver = (driver: Driver) => getLegacyF1LicenseId(driver.id) !== null;
+  const canCompeteInF1 = (driver: Driver) => isLegacyF1Driver(driver) || getSuperLicensePoints(normalizedLicenseAwards, licenseKeyFor(driver)) >= REQUIRED_SUPER_LICENSE_POINTS;
+  const eligibleDrivers = drivers.filter(canCompeteInF1);
+  const blockedDrivers = drivers.filter(driver => !canCompeteInF1(driver));
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
@@ -75,7 +83,7 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   };
   const addResults=()=>{
     const already=results.filter(r=>r.raceId===Number(raceId)).map(r=>r.driverId);
-    const entries=drivers.filter(d=>!already.includes(d.id)).map(d=>({driver:d,draft:draftResults[d.id]})).filter(x=>x.draft&&(x.draft.position!==""||x.draft.status!=="Classificado"));
+    const entries=eligibleDrivers.filter(d=>!already.includes(d.id)).map(d=>({driver:d,draft:draftResults[d.id]})).filter(x=>x.draft&&(x.draft.position!==""||x.draft.status!=="Classificado"));
     if(entries.length===0){setNotice("Preencha a posição ou a situação de pelo menos um piloto.");return;}
     const usedPositions=new Set<number>();
     for(const item of entries){
@@ -102,11 +110,11 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   };
   const selectedRace=races.find(r=>r.id===Number(raceId));
   const raceResults=results.filter(r=>r.raceId===Number(raceId));
-  const remainingDrivers=drivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
+  const remainingDrivers=eligibleDrivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
   const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
 
-  if(racesError||resultsError) return <div className="notice">Não foi possível sincronizar os dados da Fórmula 1. Seus dados não foram sobrescritos; verifique a conexão com o Supabase e tente novamente.</div>;
-  if(!racesReady||!resultsReady) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 1...</div>;
+  if(racesError||resultsError||licenseError) return <div className="notice">Não foi possível sincronizar os dados da Fórmula 1. Seus dados não foram sobrescritos; verifique a conexão com o Supabase e tente novamente.</div>;
+  if(!racesReady||!resultsReady||!licenseReady) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 1...</div>;
 
   if(settingsOnly) return <div className="championship-module">
     <div className="panel settings-reset-panel">
@@ -119,13 +127,14 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-    <div className="champ-hero panel"><div className="champ-hero-icon"><Trophy size={23}/></div><div className="champ-hero-copy"><span className="eyebrow">CAMPEONATO ATIVO</span><h2>FIA Formula One World Championship</h2><p>Temporada 2026 · Fórmula 1 · Sistema de pontuação oficial padrão</p></div><div className="champ-progress"><b>{completedRaces.toString().padStart(2,"0")} <span>/ {races.length.toString().padStart(2,"0")}</span></b><small>ETAPAS COM RESULTADO</small></div></div>
+    <div className="champ-hero panel"><div className="champ-hero-icon"><Trophy size={23}/></div><div className="champ-hero-copy"><span className="eyebrow">CAMPEONATO ATIVO</span><h2>FIA Formula One World Championship</h2><p>Temporada {ACTIVE_SEASON} · Fórmula 1 · Sistema de pontuação oficial padrão</p></div><div className="champ-progress"><b>{completedRaces.toString().padStart(2,"0")} <span>/ {races.length.toString().padStart(2,"0")}</span></b><small>ETAPAS COM RESULTADO</small></div></div>
     <div className="champ-tabs">
       <button className={tab==="classificacao"?"selected":""} onClick={()=>setTab("classificacao")}><Trophy size={15}/> Classificação</button>
       <button className={tab==="calendario"?"selected":""} onClick={()=>setTab("calendario")}><CalendarDays size={15}/> Calendário</button>
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="champ-standings-grid">
+      <div className="panel table-panel" style={{marginBottom:16}}><div className="panel-head"><div><h2>Controle de Superlicença</h2><p>Novos integrantes só podem disputar a F1 com 40 pontos nas últimas três temporadas.</p></div><span className="status-tag">{blockedDrivers.length} BLOQUEADO(S)</span></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>PONTOS</th><th>STATUS</th></tr></thead><tbody>{drivers.map(d=>{const key=licenseKeyFor(d);const points=getSuperLicensePoints(normalizedLicenseAwards,key);const legacy=isLegacyF1Driver(d);return <tr key={d.id}><td>{d.name}</td><td>{points} / 40</td><td><span className="status-tag">{legacy?"GRID ATUAL · TRANSIÇÃO":points>=REQUIRED_SUPER_LICENSE_POINTS?"LICENCIADO":"BLOQUEADO"}</span></td></tr>})}</tbody></table></div>{blockedDrivers.length>0&&<p className="market-note">Pilotos sem Superlicença não podem ser lançados nos resultados da F1. Vincule a identidade compartilhada do piloto e registre os pontos nas categorias de base.</p>}</div>
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada na temporada</p></div><span className="status-tag">PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><b>{d.name}</b></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/>{teamName(d.teamId)}</span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de construtores</h2><p>Soma dos pontos dos pilotos</p></div><span className="status-tag">EQUIPES</span></div><div className="constructor-list">{teamStandings.map((t,i)=><div className="constructor-row" key={t.id}><b className="champ-position">{String(i+1).padStart(2,"0")}</b><i style={{background:t.color}}/><span>{t.name}</span><strong>{t.points} <small>PTS</small></strong></div>)}</div></div>
     </div>}
@@ -138,7 +147,8 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
       <div className="panel result-entry">
         <div className="panel-head result-panel-heading"><div><h2>Lançar classificação da etapa</h2><p>Selecione o GP e preencha a chegada de vários pilotos de uma só vez.</p></div><span className="status-tag">{raceResults.length} REGISTRADOS</span></div>
         <div className="result-event-picker"><label>ETAPA DA TEMPORADA<select value={raceId} onChange={e=>{setRaceId(e.target.value);setDraftResults({});}}>{races.slice().sort((a,b)=>a.round-b.round).map(r=><option key={r.id} value={r.id}>R{String(r.round).padStart(2,"0")} · {r.name} — {r.circuit}</option>)}</select></label><div className="result-event-meta"><span>{selectedRace?.date||"Data a definir"}</span><span>{remainingDrivers.length} pilotos pendentes</span></div></div>
-        <div className="result-bulk-toolbar"><div><b>Ordem de chegada</b><small>Deixe em branco quem ainda não deseja registrar.</small></div><span>{filledCount} preenchidos</span></div>
+        {blockedDrivers.length>0&&<div className="market-note">Bloqueados por falta de Superlicença: {blockedDrivers.map(d=>d.name).join(", ")}.</div>}
+       <div className="result-bulk-toolbar"><div><b>Ordem de chegada</b><small>Deixe em branco quem ainda não deseja registrar.</small></div><span>{filledCount} preenchidos</span></div>
         <div className="result-driver-list">
           {remainingDrivers.map(d=>{const draft=draftResults[d.id]??{position:"",status:"Classificado"};const points=draft.status==="Classificado"&&draft.position!==""&&Number(draft.position)<=10?POINTS[Number(draft.position)-1]:0;return <div className="result-driver-row" key={d.id}>
             <div className="result-driver-identity"><span className="driver-number">{d.number}</span><div><b>{d.name}</b><small>{teamName(d.teamId)}</small></div></div>
