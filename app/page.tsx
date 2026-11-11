@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 type Team = { id: string; name: string; color: string; short: string };
-type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva"; age: number; contractUntil: number | null; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } };
+type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string };
 
 const initialTeams: Team[] = [
@@ -27,7 +27,7 @@ const initialTeams: Team[] = [
   { id:"cad", name:"Cadillac", short:"CAD", color:"#d5d5d5" },
 ];
 
-const driverDetails: Record<string, Omit<Driver, "id" | "name" | "country" | "number" | "teamId" | "status">> = {
+const driverDetails: Record<string, { age: number; contractUntil: number | null; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Lando Norris": { age:26, contractUntil:2030, attributes:{racePace:97,qualifying:97,overtaking:91,defending:91,consistency:96} },
   "Oscar Piastri": { age:25, contractUntil:2028, attributes:{racePace:96,qualifying:96,overtaking:93,defending:94,consistency:95} },
   "George Russell": { age:28, contractUntil:2027, attributes:{racePace:94,qualifying:95,overtaking:88,defending:91,consistency:94} },
@@ -77,27 +77,10 @@ const initialDriversSeed = [
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
 ].map(driver => ({ ...driver, ...driverDetails[driver.name] })) as Driver[];
 
-// Reaplica os dados-base aos pilotos carregados, sem sobrescrever equipe,
- // número, status ou outros campos que o usuário já tenha alterado.
-const normalizeDrivers = (saved: any): Driver[] => {
-  if (!Array.isArray(saved)) return initialDriversSeed;
-  return saved.map((item: any) => {
-    const base = initialDriversSeed.find(d => d.id === item?.id || d.name === item?.name);
-    if (!base) return item as Driver;
-    return {
-      ...base,
-      ...item,
-      age: item?.age ?? base.age,
-      contractUntil: item?.contractUntil ?? base.contractUntil,
-      attributes: { ...base.attributes, ...(item?.attributes ?? {}) },
-    } as Driver;
-  });
-};
 const migrateDrivers = (legacy: any): Driver[] | undefined =>
-  Array.isArray(legacy?.drivers) ? normalizeDrivers(legacy.drivers) : undefined;
+  Array.isArray(legacy?.drivers) ? legacy.drivers : undefined;
 const migrateMoves = (legacy: any): Move[] | undefined =>
   Array.isArray(legacy?.moves) ? legacy.moves : undefined;
-
 
 const registeredChampionships = [
   { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
@@ -126,15 +109,8 @@ export default function Home() {
 
   const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
   const openDriverProfile = (id: string) => setProfileDriverId(id);
-  useEffect(() => {
-    if (!driversReady) return;
-    setDrivers(current => {
-      const normalized = normalizeDrivers(current);
-      const changed = normalized.some((d, i) => JSON.stringify(d) !== JSON.stringify(current[i])) || normalized.length !== current.length;
-      return changed ? normalized : current;
-    });
-  }, [driversReady, setDrivers]);
   const profileDriver = drivers.find(d => d.id === profileDriverId);
+  const profileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const filteredDrivers = useMemo(() => drivers.filter(d =>
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -194,14 +170,14 @@ export default function Home() {
               <span className="status-tag">TEMPORADA 2026</span>
             </div>
             <div className="driver-facts-grid">
-              <div className="panel driver-fact"><span>IDADE</span><b>{profileDriver.age} anos</b></div>
+              <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
               <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
-              <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDriver.contractUntil ? `Até o fim de ${profileDriver.contractUntil}` : "Não divulgado"}</b></div>
+              <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDetails?.contractUntil ? `Até o fim de ${profileDetails.contractUntil}` : "Não divulgado"}</b></div>
             </div>
             <div className="panel driver-attributes-panel">
-              <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">NOTAS EDITÁVEIS NO CÓDIGO</span></div>
+              <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
               <div className="driver-attributes-list">
-                {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileDriver.attributes[attribute.key]}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDriver.attributes[attribute.key]}%`}}/></div></div>)}
+                {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileDetails?.attributes?.[attribute.key] ?? 0)}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDriver.attributes[attribute.key]}%`}}/></div></div>)}
               </div>
             </div>
           </div>}
