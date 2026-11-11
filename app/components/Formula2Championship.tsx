@@ -13,7 +13,7 @@ type Team = { id: string; name: string; short: string; color: string; headquarte
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
 
-const teams: Team[] = [
+export const f2Teams: Team[] = [
   {id:"inv",name:"Invicta Racing",short:"INV",color:"#e6c84f",headquarters:"Attleborough, Norfolk, Reino Unido"},
   {id:"hit",name:"Hitech",short:"HIT",color:"#2477c8",headquarters:"Silverstone, Northamptonshire, Reino Unido"},
   {id:"cam",name:"Campos Racing",short:"CAM",color:"#e23d3d",headquarters:"Alzira, Valência, Espanha"},
@@ -27,7 +27,7 @@ const teams: Team[] = [
   {id:"tri",name:"TRIDENT",short:"TRI",color:"#238b5b",headquarters:"Ossona, região de Milão, Itália"},
 ];
 
-const drivers: Driver[] = [
+export const initialF2Drivers: Driver[] = [
   {id:"f2-1",licenseId:"driver:rafael-camara",name:"Rafael Câmara",country:"Brasil",number:1,teamId:"inv"},
   {id:"f2-2",licenseId:"driver:joshua-durksen",name:"Joshua Dürksen",country:"Paraguai",number:2,teamId:"inv"},
   {id:"f2-3",licenseId:"driver:ritomo-miyata",name:"Ritomo Miyata",country:"Japão",number:3,teamId:"hit"},
@@ -104,7 +104,7 @@ const driverDetails: Record<string, { age: number; attributes: { racePace: numbe
 const sprintPoints = [10,8,6,5,4,3,2,1];
 const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
-export default function Formula2Championship({development,setDevelopment}:{development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>}) {
+export default function Formula2Championship({development,setDevelopment,drivers,setDrivers}:{development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>;drivers:Driver[];setDrivers:Dispatch<SetStateAction<Driver[]>>}) {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f2:${ACTIVE_SEASON}:results`,[]);
@@ -117,19 +117,19 @@ export default function Formula2Championship({development,setDevelopment}:{devel
   const [profileDriverId,setProfileDriverId] = useState<string | null>(null);
   const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
 
-  const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
+  const teamName=(id:string)=>f2Teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
   const profileDriver=drivers.find(d=>d.id===profileDriverId);
-  const profileTeam=teams.find(t=>t.id===profileTeamId);
+  const profileTeam=f2Teams.find(t=>t.id===profileTeamId);
   const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
   const baseProfileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment=profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined;
   const profileDetails=profileDevelopment ? { ...baseProfileDetails!, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
-  const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
+  const teamColor=(id:string)=>f2Teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
     return {...d,points:rows.reduce((sum,r)=>sum+r.points,0),wins:rows.filter(r=>r.position===1).length,podiums:rows.filter(r=>r.position!==null&&r.position<=3).length,secondPlaces:rows.filter(r=>r.position===2).length,thirdPlaces:rows.filter(r=>r.position===3).length,starts:rows.length};
   }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums||b.secondPlaces-a.secondPlaces||b.thirdPlaces-a.thirdPlaces),[results]);
-  const teamStandings=useMemo(()=>teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((sum,d)=>sum+d.points,0)})).sort((a,b)=>b.points-a.points),[standings]);
+  const teamStandings=useMemo(()=>f2Teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((sum,d)=>sum+d.points,0)})).sort((a,b)=>b.points-a.points),[standings]);
   const selectedRace=races.find(r=>r.id===Number(raceId));
   const sessionResults=results.filter(r=>r.raceId===Number(raceId)&&r.session===session);
   const remaining=drivers.filter(d=>!sessionResults.some(r=>r.driverId===d.id));
