@@ -146,24 +146,24 @@ function createAcademyFill(category:"F2"|"F3",teamId:string,resultingRoster:Tran
 
 function buildInitialFreeAgents() {
   const roster = [
-    ["Mateo Alvarez","Argentina",81,20,"F2"],["Enzo Moretti","Itália",82,19,"F2"],
-    ["Lucas Ferreira","Brasil",83,21,"F2"],["Theo Laurent","França",84,20,"F2"],
-    ["Oliver Hughes","Reino Unido",85,22,"F2"],["Mika Korhonen","Finlândia",86,19,"F2"],
-    ["Kenji Sato","Japão",87,20,"F2"],["Nikolai Petrov","Bulgária",88,21,"F2"],
-    ["Leon Weber","Alemanha",89,22,"F2"],["Rafael Costa","Portugal",90,19,"F2"],
-    ["Gabriel Silva","Brasil",91,17,"F3"],["Luca Bianchi","Itália",92,18,"F3"],
-    ["Adam Novak","República Tcheca",93,17,"F3"],["Hugo Martin","Espanha",94,18,"F3"],
-    ["Felix Andersen","Dinamarca",95,16,"F3"],["Daniel Kim","Coreia do Sul",96,17,"F3"],
-    ["Arthur Dubois","França",97,18,"F3"],["Diego Ramos","México",98,17,"F3"],
-    ["Milan Jansen","Países Baixos",99,16,"F3"],["Noah Campbell","Austrália",80,18,"F3"]
+    ["Mateo Alvarez","Argentina",81,20],["Enzo Moretti","Itália",82,19],
+    ["Lucas Ferreira","Brasil",83,21],["Theo Laurent","França",84,20],
+    ["Oliver Hughes","Reino Unido",85,22],["Mika Korhonen","Finlândia",86,19],
+    ["Kenji Sato","Japão",87,20],["Nikolai Petrov","Bulgária",88,21],
+    ["Leon Weber","Alemanha",89,22],["Rafael Costa","Portugal",90,19],
+    ["Gabriel Silva","Brasil",91,17],["Luca Bianchi","Itália",92,18],
+    ["Adam Novak","República Tcheca",93,17],["Hugo Martin","Espanha",94,18],
+    ["Felix Andersen","Dinamarca",95,16],["Daniel Kim","Coreia do Sul",96,17],
+    ["Arthur Dubois","França",97,18],["Diego Ramos","México",98,17],
+    ["Milan Jansen","Países Baixos",99,16],["Noah Campbell","Austrália",80,18]
   ] as const;
   const drivers: TransferDriver[] = [];
   const development: DriverDevelopmentState = {};
-  roster.forEach(([name,country,number,age,category],index)=>{
+  roster.forEach(([name,country,number,age],index)=>{
     const licenseId="free-agent:"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-");
-    const base=(category==="F2"?69:57)+(index%4);
+    const base=62+(index%9);
     const attributes={racePace:base+(index%5),qualifying:base+((index+2)%5),overtaking:base+((index+3)%5),defending:base+((index+1)%5),consistency:base+((index+4)%5)};
-    drivers.push({id:"free-"+(index+1),licenseId,name,country,number,teamId:"",status:"Ativo",isFictional:true,category});
+    drivers.push({id:"free-"+(index+1),licenseId,name,country,number,teamId:"",status:"Ativo",isFictional:true});
     development[licenseId]={age,potential:Math.min(91,base+17+(index%8)),attributes,history:[]};
   });
   return {drivers,development};
@@ -218,7 +218,7 @@ export default function Home() {
     ...drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F1" as const, selectionId:"F1|"+d.id })),
     ...f2Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F2" as const, selectionId:"F2|"+d.id })),
     ...f3Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F3" as const, selectionId:"F3|"+d.id })),
-    ...freeAgents.map(d=>({ ...d, category:d.category ?? "F3" as const, selectionId:"LIVRE|"+d.id })),
+    ...freeAgents.map(d=>({ ...d, category:"LIVRE" as const, selectionId:"LIVRE|"+d.id })),
   ];
   const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
     (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
@@ -229,18 +229,18 @@ export default function Home() {
     const isFreeAgent = selectedCategory==="LIVRE";
     const sourceId = selectedDriver.slice(separator+1);
     const freeDriver = isFreeAgent ? freeAgents.find(d=>d.id===sourceId) : undefined;
-    const sourceCategory = (isFreeAgent ? freeDriver?.category : selectedCategory) as "F1"|"F2"|"F3"|undefined;
-    if (!sourceCategory) { setNotice("Este piloto livre não está mais disponível."); return; }
+    const sourceCategory = (isFreeAgent ? undefined : selectedCategory) as "F1"|"F2"|"F3"|undefined;
+    if (!isFreeAgent && !sourceCategory) { setNotice("Selecione um piloto válido."); return; }
     const sourceList = sourceCategory==="F1" ? marketState.f1 : sourceCategory==="F2" ? marketState.f2 : marketState.f3;
     const driver = isFreeAgent ? freeDriver : sourceList.find(d=>d.id===sourceId && d.status!=="Transferido" && d.status!=="Aposentado");
     if (!driver) { setNotice("Este piloto não está mais disponível no elenco. Atualize a página e tente novamente."); return; }
 
-    const from = isFreeAgent ? "Mercado de pilotos livres · "+sourceCategory : marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
+    const from = isFreeAgent ? "Agente livre" : marketTeamName(sourceCategory!,driver.teamId)+" · "+sourceCategory;
     const move = {
       id: Date.now(), driver: driver.name, from,
       to: destinationCategory==="RETIRE" ? "Aposentadoria" : "",
       date: "Temporada "+ACTIVE_SEASON, status: "Concluída",
-      category: sourceCategory+" → "+destinationCategory
+      category: (isFreeAgent ? "Livre" : sourceCategory)+" → "+destinationCategory
     };
 
     if (destinationCategory==="RETIRE") {
@@ -262,10 +262,10 @@ export default function Home() {
     if (!target) { setNotice("Selecione uma equipe de destino."); return; }
 
     const hierarchy = {F1:3,F2:2,F3:1};
-    if (hierarchy[destinationCategory] < hierarchy[sourceCategory]) {
+    if (!isFreeAgent && hierarchy[destinationCategory] < hierarchy[sourceCategory!]) {
       setNotice("Rebaixamentos não são permitidos. A hierarquia é F3 → F2 → F1."); return;
     }
-    if (sourceCategory==="F3" && destinationCategory==="F1") {
+    if (!isFreeAgent && sourceCategory==="F3" && destinationCategory==="F1") {
       setNotice("A promoção precisa passar pela Fórmula 2: F3 → F2 → F1."); return;
     }
     const identity = driver.licenseId ?? "driver:"+driver.id;
@@ -275,14 +275,14 @@ export default function Home() {
     if (duplicateActive) {
       setNotice("Este piloto já aparece em outro elenco ativo. A movimentação foi bloqueada para evitar duplicidade."); return;
     }
-    if (sourceCategory===destinationCategory && driver.teamId===target.id) {
+    if (!isFreeAgent && sourceCategory===destinationCategory && driver.teamId===target.id) {
       setNotice("Este piloto já pertence a essa equipe."); return;
     }
 
     const destinationRoster = destinationCategory==="F1" ? marketState.f1 : destinationCategory==="F2" ? marketState.f2 : marketState.f3;
     const occupied = destinationRoster.filter(d =>
       d.teamId===target.id && d.status!=="Transferido" && d.status!=="Aposentado" &&
-      !(sourceCategory===destinationCategory && d.id===sourceId)
+      !(!isFreeAgent && sourceCategory===destinationCategory && d.id===sourceId)
     ).length;
     if (occupied>=2) { setNotice(target.name+" já tem dois pilotos ativos. Escolha outra equipe ou libere uma vaga."); return; }
 
@@ -291,7 +291,8 @@ export default function Home() {
     if (isFreeAgent) {
       const targetKey=keyFor(destinationCategory);
       const identity=driver.licenseId ?? "driver:"+driver.id;
-      const signed:TransferDriver={...driver,id:"signed-"+Date.now()+"-"+sourceId,licenseId:identity,teamId:target.id,status:destinationCategory==="F1"?"Titular":"Ativo"};
+      const {category:_unassignedCategory,...unassignedDriver}=driver;
+      const signed:TransferDriver={...unassignedDriver,id:"signed-"+Date.now()+"-"+sourceId,licenseId:identity,teamId:target.id,status:destinationCategory==="F1"?"Titular":"Ativo"};
       setMarketState(old=>({...old,freeAgents:old.freeAgents.filter(d=>d.id!==sourceId),[targetKey]:[...old[targetKey],signed],moves:[move,...old.moves]}));
       const savedDevelopment=INITIAL_FREE_AGENT_POOL.development[identity];
       if(savedDevelopment) setDevelopment(old=>({...old,[identity]:old[identity]??savedDevelopment}));
@@ -439,7 +440,7 @@ export default function Home() {
               <button className={marketTab==="free"?"selected":""} onClick={()=>setMarketTab("free")}><Users size={14}/> Pilotos livres <span className="nav-count">{freeAgents.length}</span></button>
             </div>
             {marketTab==="movements" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Transferências entre equipes, promoções e aposentadorias</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><b>{m.driver}</b></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
-            {marketTab==="free" && <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos livres</h2><p>{freeAgents.length} pilotos sem contrato disponíveis para contratação</p></div><span className="status-tag">20 fictícios iniciais</span></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>CATEGORIA</th><th>IDADE</th><th>POTENCIAL</th><th>STATUS</th><th></th></tr></thead><tbody>{freeAgents.map(d=>{const details=development[d.licenseId??d.id]??INITIAL_FREE_AGENT_POOL.development[d.licenseId??d.id];return <tr key={d.id}><td><b>{d.name}</b><div className="free-agent-origin">Piloto fictício · Academia</div></td><td>{d.country}</td><td>{d.category==="F2"?"Fórmula 2":"Fórmula 3"}</td><td>{details?.age??"—"}</td><td>{details?.potential??"—"}</td><td><span className="status-tag">Sem contrato</span></td><td><button className="primary-button compact" onClick={()=>{setSelectedDriver("LIVRE|"+d.id);setDestinationCategory(d.category??"F3");setDestination("");setNotice("");setModal(true)}}><Plus size={14}/> Contratar</button></td></tr>})}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Os pilotos livres não ocupam vagas em equipes. Ao contratar, o piloto sai desta lista e passa a integrar o elenco escolhido. A lista é salva na nuvem.</span></div></div>}
+            {marketTab==="free" && <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos livres</h2><p>{freeAgents.length} pilotos sem contrato disponíveis para contratação</p></div><span className="status-tag">20 fictícios iniciais</span></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>CATEGORIA</th><th>IDADE</th><th>POTENCIAL</th><th>STATUS</th><th></th></tr></thead><tbody>{freeAgents.map(d=>{const details=development[d.licenseId??d.id]??INITIAL_FREE_AGENT_POOL.development[d.licenseId??d.id];return <tr key={d.id}><td><b>{d.name}</b><div className="free-agent-origin">Piloto fictício · Academia</div></td><td>{d.country}</td><td>Livre</td><td>{details?.age??"—"}</td><td>{details?.potential??"—"}</td><td><span className="status-tag">Sem contrato</span></td><td><button className="primary-button compact" onClick={()=>{setSelectedDriver("LIVRE|"+d.id);setDestinationCategory("F1");setDestination("");setNotice("");setModal(true)}}><Plus size={14}/> Contratar</button></td></tr>})}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Os pilotos livres não ocupam vagas em equipes. Ao contratar, o piloto sai desta lista e passa a integrar o elenco escolhido. A lista é salva na nuvem.</span></div></div>}
           </>}
           <footer> MOTORSPORT HUB <span>•</span> DADOS DE REFERÊNCIA: TEMPORADA 2026 <span>•</span> PROTÓTIPO 0.1</footer>
         </div>
