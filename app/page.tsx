@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { ACTIVE_SEASON, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards } from "@/lib/superLicense";
+import { ACTIVE_SEASON } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import { useTransferMarketState, type TransferDriver } from "@/lib/useTransferMarketState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
@@ -126,7 +126,6 @@ export default function Home() {
     ...old, f3: typeof action === "function" ? (action as (value:F3Driver[])=>F3Driver[])(old.f3 as F3Driver[]) : action as TransferDriver[]
   }));
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
-  const [licenseAwardsRaw] = useCloudState<unknown>("superlicense:season-awards", []);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
@@ -147,7 +146,6 @@ export default function Home() {
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
-  const profileLicensePoints = profileDriver ? getSuperLicensePoints(normalizeLicenseAwards(licenseAwardsRaw), profileDriver.licenseId ?? getLegacyF1LicenseId(profileDriver.id)) : 0;
   const filteredDrivers = useMemo(() => drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" &&
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -291,7 +289,7 @@ export default function Home() {
               <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
               <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
               <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDetails?.contractUntil ? `Até o fim de ${profileDetails.contractUntil}` : "Não divulgado"}</b></div>
-              <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>{profileLicensePoints >= 40 ? "COMPLETO" : `${profileLicensePoints} / 40 PTS`}</b></div>
+              <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>COMPLETO</b></div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Desenvolvimento do piloto</h2><p>Evolução automática ao final de cada temporada</p></div><span className="status-tag">POTENCIAL {profileDevelopment?.potential ?? "—"}/100</span></div>
