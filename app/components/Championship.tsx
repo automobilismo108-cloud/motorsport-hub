@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
@@ -43,12 +43,11 @@ const initialRaces: Race[] = [
   {id:24,round:24,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
-export default function Championship({drivers,teams,driverDetails,settingsOnly=false}:{drivers:Driver[];teams:Team[];driverDetails:Record<string,{age:number;attributes:{racePace:number;qualifying:number;overtaking:number;defending:number;consistency:number}}> ;settingsOnly?:boolean}) {
+export default function Championship({drivers,teams,driverDetails,development,setDevelopment,settingsOnly=false}:{drivers:Driver[];teams:Team[];driverDetails:Record<string,{age:number;attributes:{racePace:number;qualifying:number;overtaking:number;defending:number;consistency:number}}> ;development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>;settingsOnly?:boolean}) {
   const [tab,setTab]=useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,,licenseReady,licenseError]=useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
-  const [development,setDevelopment,developmentReady,developmentError]=useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [raceId,setRaceId]=useState("1");
   const [draftResults,setDraftResults]=useState<Record<string,{position:string;status:string}>>({});
   const [showRace,setShowRace]=useState(false);
@@ -77,7 +76,6 @@ export default function Championship({drivers,teams,driverDetails,settingsOnly=f
   const seasonComplete = races.length > 0 && races.every(r => eligibleDrivers.every(d => results.some(result => result.raceId === r.id && result.driverId === d.id)));
   const seasonAlreadyFinalized = eligibleDrivers.length > 0 && eligibleDrivers.every(d => (development[d.licenseId || d.id]?.history ?? []).some(item => item.category === "F1" && item.season === ACTIVE_SEASON));
   const finalizeSeason = () => {
-    if (!developmentReady) { setNotice("Aguarde a sincronização da evolução dos pilotos."); return; }
     if (!seasonComplete) { setNotice("Registre todos os pilotos elegíveis em todas as etapas antes de finalizar a temporada."); return; }
     if (seasonAlreadyFinalized) { setNotice("A evolução desta temporada já foi aplicada e não será duplicada."); return; }
     setDevelopment(evolveDriverSeason(development, "F1", ACTIVE_SEASON, eligibleDrivers, driverDetails, results));
@@ -124,8 +122,8 @@ export default function Championship({drivers,teams,driverDetails,settingsOnly=f
   const remainingDrivers=eligibleDrivers.filter(d=>!raceResults.some(r=>r.driverId===d.id));
   const filledCount=remainingDrivers.filter(d=>draftResults[d.id]&&(draftResults[d.id].position!==""||draftResults[d.id].status!=="Classificado")).length;
 
-  if(racesError||resultsError||licenseError||developmentError) return <div className="notice">Não foi possível sincronizar os dados da Fórmula 1. Seus dados não foram sobrescritos; verifique a conexão com o Supabase e tente novamente.</div>;
-  if(!racesReady||!resultsReady||!licenseReady||!developmentReady) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 1...</div>;
+  if(racesError||resultsError||licenseError) return <div className="notice">Não foi possível sincronizar os dados da Fórmula 1. Seus dados não foram sobrescritos; verifique a conexão com o Supabase e tente novamente.</div>;
+  if(!racesReady||!resultsReady||!licenseReady) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 1...</div>;
 
   if(settingsOnly) return <div className="championship-module">
     <div className="panel settings-reset-panel">
@@ -144,7 +142,7 @@ export default function Championship({drivers,teams,driverDetails,settingsOnly=f
       <button className={tab==="calendario"?"selected":""} onClick={()=>setTab("calendario")}><CalendarDays size={15}/> Calendário</button>
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
-    {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}><div className="panel-head"><div><h2>Evolução dos pilotos · Temporada {ACTIVE_SEASON}</h2><p>Ao finalizar, o sistema atualiza automaticamente atributos, potencial e histórico conforme a classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"EVOLUÇÃO APLICADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div><div className="result-bulk-footer"><span>{seasonAlreadyFinalized?"A evolução desta temporada já foi registrada.":seasonComplete?"Todos os resultados foram lançados. Você já pode finalizar a temporada.":"Complete os resultados de todas as etapas para liberar a evolução."}</span><button className="primary-button" disabled={!seasonComplete||seasonAlreadyFinalized||!developmentReady||!!developmentError} onClick={finalizeSeason}><Check size={16}/> Finalizar temporada e evoluir pilotos</button></div></div>}
+    {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}><div className="panel-head"><div><h2>Evolução dos pilotos · Temporada {ACTIVE_SEASON}</h2><p>Ao finalizar, o sistema atualiza automaticamente atributos, potencial e histórico conforme a classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"EVOLUÇÃO APLICADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div><div className="result-bulk-footer"><span>{seasonAlreadyFinalized?"A evolução desta temporada já foi registrada.":seasonComplete?"Todos os resultados foram lançados. Você já pode finalizar a temporada.":"Complete os resultados de todas as etapas para liberar a evolução."}</span><button className="primary-button" disabled={!seasonComplete||seasonAlreadyFinalized} onClick={finalizeSeason}><Check size={16}/> Finalizar temporada e evoluir pilotos</button></div></div>}
     {tab==="classificacao"&&<div className="champ-standings-grid">
       <div className="panel table-panel" style={{marginBottom:16}}><div className="panel-head"><div><h2>Controle de Superlicença</h2><p>Novos integrantes só podem disputar a F1 com 40 pontos nas últimas três temporadas.</p></div><span className="status-tag">{blockedDrivers.length} BLOQUEADO(S)</span></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>PONTOS</th><th>STATUS</th></tr></thead><tbody>{drivers.map(d=>{const key=licenseKeyFor(d);const points=getSuperLicensePoints(normalizedLicenseAwards,key);const legacy=isLegacyF1Driver(d);return <tr key={d.id}><td>{d.name}</td><td>{points} / 40</td><td><span className="status-tag">{legacy?"GRID ATUAL · TRANSIÇÃO":points>=REQUIRED_SUPER_LICENSE_POINTS?"LICENCIADO":"BLOQUEADO"}</span></td></tr>})}</tbody></table></div>{blockedDrivers.length>0&&<p className="market-note">Pilotos sem Superlicença não podem ser lançados nos resultados da F1. Vincule a identidade compartilhada do piloto e registre os pontos nas categorias de base.</p>}</div>
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada na temporada</p></div><span className="status-tag">PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><b>{d.name}</b></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/>{teamName(d.teamId)}</span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
