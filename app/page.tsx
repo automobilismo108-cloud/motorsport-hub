@@ -137,7 +137,7 @@ export default function Home() {
   const openTeamProfile = (id: string) => { setProfileDriverId(null); setProfileTeamId(id); };
   const profileDriver = drivers.find(d => d.id === profileDriverId);
   const profileTeam = teams.find(t => t.id === profileTeamId);
-  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
+  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
@@ -146,9 +146,9 @@ export default function Home() {
   ), [drivers, search, teams]);
 
   const allMarketDrivers = [
-    ...drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
-    ...f2Drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
-    ...f3Drivers.filter(d=>d.status!=="Transferido").map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
+    ...drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F1" as const, selectionId:"F1:"+d.id })),
+    ...f2Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F2" as const, selectionId:"F2:"+d.id })),
+    ...f3Drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({ ...d, category:"F3" as const, selectionId:"F3:"+d.id })),
   ];
   const marketTeamName = (category:"F1"|"F2"|"F3", id:string) =>
     (category==="F1"?teams:category==="F2"?f2Teams:f3Teams).find(t=>t.id===id)?.name ?? "Sem equipe";
