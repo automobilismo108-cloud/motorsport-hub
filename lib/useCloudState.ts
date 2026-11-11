@@ -14,7 +14,8 @@ export function useCloudState<T>(
 ): [T, Dispatch<SetStateAction<T>>, boolean, string | null] {
   const { user } = useAuth();
   const [value, setValue] = useState<T>(initialValue);
-  const [ready, setReady] = useState(false);\n  const [syncError, setSyncError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
