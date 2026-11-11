@@ -141,9 +141,6 @@ export default function Home() {
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
-  const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
-  const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
-  const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
   const filteredDrivers = useMemo(() => drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" &&
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -259,14 +256,6 @@ export default function Home() {
               <div className="driver-attributes-list">{profileDevelopment?.history.slice().reverse().map((item,index)=><div className="driver-attribute-row" key={`${item.category}-${item.season}-${index}`}><div><b>{item.season} · {item.category}</b><strong>{item.change>0?"+":""}{item.change}</strong></div><small>Posição final: {item.position}º · Média {item.overallBefore} → {item.overallAfter}</small></div>)}</div>
             </div>
             <div className="panel driver-attributes-panel">
-              <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontuação informativa · não bloqueia contratações ou participação</p></div><span className="status-tag">SEM RESTRIÇÃO</span></div>
-              <div className="driver-facts-grid">
-                <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
-                <div className="panel driver-fact"><span>STATUS</span><b>A Superlicença não bloqueia a participação</b></div>
-                <div className="panel driver-fact"><span>VALIDADE</span><b>Janela móvel de 3 temporadas</b></div>
-              </div>
-            </div>
-            <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
               <div className="driver-attributes-list">
                 {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileDetails?.attributes?.[attribute.key] ?? 0)}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDetails?.attributes?.[attribute.key] ?? 0}%`}}/></div></div>)}
@@ -318,7 +307,7 @@ export default function Home() {
 
           {!profileDriver && !profileTeam && section==="Equipes" && <div className="team-cards">{teams.map(t=>{const ds=drivers.filter(d=>d.teamId===t.id);return <div className="panel team-card" key={t.id}><div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div><h3><button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button></h3><div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button></div>)}</div><div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div></div>})}</div>}
 
-          {!profileDriver && !profileTeam && section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Movimentações reais de referência e simulações locais</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
+          {!profileDriver && !profileTeam && section==="Mercado" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Transferências entre equipes, promoções e aposentadorias</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><button type="button" className="driver-name-link" onClick={()=>{const d=drivers.find(x=>x.name===m.driver);if(d)openDriverProfile(d.id)}}>{m.driver}</button></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
           <footer> MOTORSPORT HUB <span>•</span> DADOS DE REFERÊNCIA: TEMPORADA 2026 <span>•</span> PROTÓTIPO 0.1</footer>
         </div>
       </section>
