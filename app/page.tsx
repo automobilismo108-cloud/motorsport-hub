@@ -27,6 +27,20 @@ const initialTeams: Team[] = [
   { id:"cad", name:"Cadillac", short:"CAD", color:"#d5d5d5" },
 ];
 
+const teamDetails: Record<string, { headquarters: string; power: number; downforce: number }> = {
+  mcl: { headquarters:"Woking, Inglaterra", power:94, downforce:95 },
+  mer: { headquarters:"Brackley, Inglaterra", power:96, downforce:92 },
+  red: { headquarters:"Milton Keynes, Inglaterra", power:95, downforce:94 },
+  fer: { headquarters:"Maranello, Itália", power:93, downforce:93 },
+  wil: { headquarters:"Grove, Inglaterra", power:91, downforce:88 },
+  rb: { headquarters:"Faenza, Itália", power:91, downforce:87 },
+  ast: { headquarters:"Silverstone, Inglaterra", power:90, downforce:91 },
+  has: { headquarters:"Kannapolis, Estados Unidos", power:90, downforce:87 },
+  aud: { headquarters:"Hinwil, Suíça", power:91, downforce:89 },
+  alp: { headquarters:"Enstone, Inglaterra", power:92, downforce:89 },
+  cad: { headquarters:"Fishers, Indiana, Estados Unidos", power:87, downforce:85 },
+};
+
 const driverDetails: Record<string, { age: number; contractUntil: number | null; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
   "Lando Norris": { age:26, contractUntil:2030, attributes:{racePace:97,qualifying:97,overtaking:91,defending:91,consistency:96} },
   "Oscar Piastri": { age:25, contractUntil:2028, attributes:{racePace:96,qualifying:96,overtaking:93,defending:94,consistency:95} },
@@ -193,9 +207,15 @@ export default function Home() {
               <span className="status-tag">EQUIPE INSCRITA</span>
             </div>
             <div className="driver-facts-grid">
+              <div className="panel driver-fact"><span>SEDE DA EQUIPE</span><b>{teamDetails[profileTeam.id]?.headquarters ?? "Não informada"}</b></div>
               <div className="panel driver-fact"><span>PILOTOS CADASTRADOS</span><b>{profileTeamDrivers.length} / 2</b></div>
               <div className="panel driver-fact"><span>VAGAS DISPONÍVEIS</span><b>{Math.max(0,2-profileTeamDrivers.length)}</b></div>
-              <div className="panel driver-fact"><span>IDENTIFICAÇÃO</span><b>{profileTeam.short}</b></div>
+            </div>
+            <div className="panel driver-attributes-panel">
+              <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação estimada de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
+              <div className="driver-attributes-list">
+                {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{teamDetails[profileTeam.id]?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${teamDetails[profileTeam.id]?.[attribute.key] ?? 0}%`}}/></div></div>)}
+              </div>
             </div>
             <div className="panel team-profile-roster">
               <div className="panel-head"><div><h2>Dupla de pilotos</h2><p>Pilotos atualmente vinculados à equipe</p></div><span className="status-tag">{profileTeamDrivers.length} CADASTRADO(S)</span></div>
