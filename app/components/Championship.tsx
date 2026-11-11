@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useCloudState } from "@/lib/useCloudState";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
 type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
@@ -9,6 +10,8 @@ type Race = { id: number; round: number; name: string; circuit: string; date: st
 type Result = { id: number; raceId: number; driverId: string; position: number | null; points: number; status: string };
 
 const POINTS = [25,18,15,12,10,8,6,4,2,1];
+const migrateRaces = (legacy: any): Race[] | undefined => Array.isArray(legacy?.races) ? legacy.races : undefined;
+const migrateResults = (legacy: any): Result[] | undefined => Array.isArray(legacy?.results) ? legacy.results : undefined;
 // Calendário original oficial de 24 etapas anunciado pela FIA/F1 para 2026.
  // Bahrain e Arábia Saudita permanecem na lista a pedido do usuário, mesmo após os cancelamentos.
 const initialRaces: Race[] = [
@@ -50,21 +53,7 @@ export default function Championship({drivers,teams,settingsOnly=false}:{drivers
   const [raceDate,setRaceDate]=useState("");
   const [notice,setNotice]=useState("");
   const [confirmReset,setConfirmReset]=useState(false);
-  const [storageReady,setStorageReady]=useState(false);
 
-  useEffect(()=>{
-    try {
-      const saved=localStorage.getItem("motorsport-hub:championship:f1:2026:v1");
-      if(saved){const data=JSON.parse(saved);if(Array.isArray(data.races))setRaces(data.races);if(Array.isArray(data.results))setResults(data.results);}
-    } catch(error){console.error("Não foi possível carregar os dados do campeonato.",error);}
-    setStorageReady(true);
-  },[]);
-
-  useEffect(()=>{
-    if(!storageReady)return;
-    try{localStorage.setItem("motorsport-hub:championship:f1:2026:v1",JSON.stringify({races,results}));}
-    catch(error){console.error("Não foi possível salvar os dados do campeonato.",error);}
-  },[races,results,storageReady]);
 
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
