@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ACTIVE_SEASON, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
+import { ACTIVE_SEASON } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
@@ -120,7 +120,6 @@ export default function Home() {
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [f2Drivers,setF2Drivers,f2DriversReady,f2DriversError] = useCloudState<F2Driver[]>("workspace:f2:drivers",initialF2Drivers);
   const [f3Drivers,setF3Drivers,f3DriversReady,f3DriversError] = useCloudState<F3Driver[]>("workspace:f3:drivers",initialF3Drivers);
-  const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
@@ -195,8 +194,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError || licenseError || developmentError || f2DriversError || f3DriversError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError || developmentError || f2DriversError || f3DriversError}</div>;
-  if (!driversReady || !movesReady || !licenseReady || !developmentReady || !f2DriversReady || !f3DriversReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (driversError || movesError || developmentError || f2DriversError || f3DriversError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || developmentError || f2DriversError || f3DriversError}</div>;
+  if (!driversReady || !movesReady || !developmentReady || !f2DriversReady || !f3DriversReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
