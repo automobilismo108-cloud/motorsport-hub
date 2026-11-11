@@ -75,7 +75,7 @@ const initialDriversSeed = [
   {id:"d20",name:"Franco Colapinto",country:"Argentina",number:43,teamId:"alp",status:"Titular"},
   {id:"d21",name:"Sergio Pérez",country:"México",number:11,teamId:"cad",status:"Titular"},
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
-].map(driver => ({ ...driver, ...driverDetails[driver.name] })) as Driver[];
+];
 
 const migrateDrivers = (legacy: any): Driver[] | undefined =>
   Array.isArray(legacy?.drivers) ? legacy.drivers : undefined;
