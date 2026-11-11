@@ -143,24 +143,53 @@ function createAcademyFill(category:"F2"|"F3",teamId:string,resultingRoster:Tran
   return {drivers:created,development:records};
 }
 
+
+function buildInitialFreeAgents() {
+  const roster = [
+    ["Mateo Alvarez","Argentina",81,20,"F2"],["Enzo Moretti","Itália",82,19,"F2"],
+    ["Lucas Ferreira","Brasil",83,21,"F2"],["Theo Laurent","França",84,20,"F2"],
+    ["Oliver Hughes","Reino Unido",85,22,"F2"],["Mika Korhonen","Finlândia",86,19,"F2"],
+    ["Kenji Sato","Japão",87,20,"F2"],["Nikolai Petrov","Bulgária",88,21,"F2"],
+    ["Leon Weber","Alemanha",89,22,"F2"],["Rafael Costa","Portugal",90,19,"F2"],
+    ["Gabriel Silva","Brasil",91,17,"F3"],["Luca Bianchi","Itália",92,18,"F3"],
+    ["Adam Novak","República Tcheca",93,17,"F3"],["Hugo Martin","Espanha",94,18,"F3"],
+    ["Felix Andersen","Dinamarca",95,16,"F3"],["Daniel Kim","Coreia do Sul",96,17,"F3"],
+    ["Arthur Dubois","França",97,18,"F3"],["Diego Ramos","México",98,17,"F3"],
+    ["Milan Jansen","Países Baixos",99,16,"F3"],["Noah Campbell","Austrália",80,18,"F3"]
+  ] as const;
+  const drivers: TransferDriver[] = [];
+  const development: DriverDevelopmentState = {};
+  roster.forEach(([name,country,number,age,category],index)=>{
+    const licenseId="free-agent:"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-");
+    const base=(category==="F2"?69:57)+(index%4);
+    const attributes={racePace:base+(index%5),qualifying:base+((index+2)%5),overtaking:base+((index+3)%5),defending:base+((index+1)%5),consistency:base+((index+4)%5)};
+    drivers.push({id:"free-"+(index+1),licenseId,name,country,number,teamId:"",status:"Ativo",isFictional:true,category});
+    development[licenseId]={age,potential:Math.min(91,base+17+(index%8)),attributes,history:[]};
+  });
+  return {drivers,development};
+}
+const INITIAL_FREE_AGENT_POOL=buildInitialFreeAgents();
+
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
   const [teams] = useState(initialTeams);
   const [marketState,setMarketState,marketReady,marketError] = useTransferMarketState({
-    f1: initialDriversSeed, f2: initialF2Drivers, f3: initialF3Drivers, moves: initialMoves
+    f1: initialDriversSeed, f2: initialF2Drivers, f3: initialF3Drivers, freeAgents: INITIAL_FREE_AGENT_POOL.drivers, moves: initialMoves
   });
   const drivers = marketState.f1 as Driver[];
   const f2Drivers = marketState.f2 as F2Driver[];
   const f3Drivers = marketState.f3 as F3Driver[];
   const moves = marketState.moves as Move[];
+  const freeAgents = marketState.freeAgents ?? INITIAL_FREE_AGENT_POOL.drivers;
+  const [marketTab,setMarketTab] = useState<"movements"|"free">("movements");
   const setF2Drivers: Dispatch<SetStateAction<F2Driver[]>> = action => setMarketState(old => ({
     ...old, f2: typeof action === "function" ? (action as (value:F2Driver[])=>F2Driver[])(old.f2 as F2Driver[]) : action as TransferDriver[]
   }));
   const setF3Drivers: Dispatch<SetStateAction<F3Driver[]>> = action => setMarketState(old => ({
     ...old, f3: typeof action === "function" ? (action as (value:F3Driver[])=>F3Driver[])(old.f3 as F3Driver[]) : action as TransferDriver[]
   }));
-  const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
+  const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",INITIAL_FREE_AGENT_POOL.development);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
