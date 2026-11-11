@@ -167,8 +167,7 @@ export default function Home() {
     const order = {F3:3,F2:2,F1:1};
     if (order[destinationCategory] > order[sourceCategory]) { setNotice("Não são permitidos rebaixamentos entre categorias."); return; }
     if (sourceCategory===destinationCategory && driver.teamId===target.id) { setNotice("Este piloto já pertence a essa equipe."); return; }
-    const targetRoster = destinationCategory==="F1"?drivers:destinationCategory==="F2"?f2Drivers:f3Drivers;
-    const occupants = targetRoster.filter(d=>d.teamId===target.id && (destinationCategory!=="F1" || d.status==="Titular"));
+    const occupants = destinationCategory==="F1" ? drivers.filter(d=>d.teamId===target.id && d.status==="Titular") : destinationCategory==="F2" ? f2Drivers.filter(d=>d.teamId===target.id) : f3Drivers.filter(d=>d.teamId===target.id);
     if (occupants.length >= 2) { setNotice(target.name+" já possui dois pilotos. Libere uma vaga antes de concluir."); return; }
     const from = marketTeamName(sourceCategory,driver.teamId)+" · "+sourceCategory;
     const to = target.name+" · "+destinationCategory;
@@ -247,10 +246,10 @@ export default function Home() {
               <div className="driver-attributes-list">{profileDevelopment?.history.slice().reverse().map((item,index)=><div className="driver-attribute-row" key={`${item.category}-${item.season}-${index}`}><div><b>{item.season} · {item.category}</b><strong>{item.change>0?"+":""}{item.change}</strong></div><small>Posição final: {item.position}º · Média {item.overallBefore} → {item.overallAfter}</small></div>)}</div>
             </div>
             <div className="panel driver-attributes-panel">
-              <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos das temporadas {ACTIVE_SEASON-2}–{ACTIVE_SEASON}</p></div><span className="status-tag">{profileHasLegacyF1Seat?"GRID ATUAL · TRANSIÇÃO":profileLicenseEligible?"LICENCIADO":"NÃO ELEGÍVEL"}</span></div>
+              <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontuação informativa · não bloqueia contratações ou participação</p></div><span className="status-tag">SEM RESTRIÇÃO</span></div>
               <div className="driver-facts-grid">
                 <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
-                <div className="panel driver-fact"><span>STATUS</span><b>{profileHasLegacyF1Seat?"Vaga F1 preexistente":profileLicenseEligible?"Requisito atingido":"Não pode disputar a F1"}</b></div>
+                <div className="panel driver-fact"><span>STATUS</span><b>A Superlicença não bloqueia a participação</b></div>
                 <div className="panel driver-fact"><span>VALIDADE</span><b>Janela móvel de 3 temporadas</b></div>
               </div>
             </div>
