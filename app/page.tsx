@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 type Team = { id: string; name: string; color: string; short: string };
-type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" | "Aposentado" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" | "Aposentado"; isFictional?: boolean };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string; category?: string };
 
 const initialTeams: Team[] = [
