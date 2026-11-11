@@ -12,6 +12,7 @@ export type TransferDriver = {
   number: number;
   teamId: string;
   status?: "Titular" | "Reserva" | "Ativo" | "Transferido" | "Aposentado";
+  isFictional?: boolean;
 };
 
 export type TransferMove = {
