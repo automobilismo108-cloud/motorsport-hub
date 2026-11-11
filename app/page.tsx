@@ -291,8 +291,7 @@ export default function Home() {
     if (isFreeAgent) {
       const targetKey=keyFor(destinationCategory);
       const identity=driver.licenseId ?? "driver:"+driver.id;
-      const {category:_unassignedCategory,...unassignedDriver}=driver;
-      const signed:TransferDriver={...unassignedDriver,id:"signed-"+Date.now()+"-"+sourceId,licenseId:identity,teamId:target.id,status:destinationCategory==="F1"?"Titular":"Ativo"};
+      const signed:TransferDriver={...driver,id:"signed-"+Date.now()+"-"+sourceId,licenseId:identity,teamId:target.id,status:destinationCategory==="F1"?"Titular":"Ativo"};
       setMarketState(old=>({...old,freeAgents:old.freeAgents.filter(d=>d.id!==sourceId),[targetKey]:[...old[targetKey],signed],moves:[move,...old.moves]}));
       const savedDevelopment=INITIAL_FREE_AGENT_POOL.development[identity];
       if(savedDevelopment) setDevelopment(old=>({...old,[identity]:old[identity]??savedDevelopment}));
