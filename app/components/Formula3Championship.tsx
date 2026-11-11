@@ -133,8 +133,8 @@ export default function Formula3Championship({development,setDevelopment,drivers
   const profileTeam=f3Teams.find(t=>t.id===profileTeamId);
   const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
   const baseProfileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
-  const profileDevelopment=profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined;
-  const profileDetails=profileDevelopment ? { ...baseProfileDetails!, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
+  const profileDevelopment=profileDriver ? (development[profileDriver.licenseId] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
+  const profileDetails=profileDevelopment ? { age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const teamColor=(id:string)=>f3Teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>activeDrivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
@@ -164,7 +164,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
     if (!developmentAlreadyApplied) {
       setDevelopment(evolveDriverSeason(development, "F3", ACTIVE_SEASON, activeDrivers, driverDetails, results));
     }
-    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 3 finalizada. Evolução dos pilotos aplicada; Superlicença desativada nesta etapa.");
+    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 3 finalizada. Evolução dos pilotos aplicada.");
   };
   const saveResults=()=>{
     const used=new Set<number>(sessionResults.filter(r=>r.position!==null).map(r=>r.position as number));
@@ -238,7 +238,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}>
-      <div className="panel-head"><div><h2>Superlicença FIA · Temporada {ACTIVE_SEASON}</h2><p>Fórmula 3: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
+      <div className="panel-head"><div><h2>Finalização da temporada · Fórmula 3</h2><p>Confirme a temporada para aplicar a evolução dos atributos. A Superlicença não será verificada nesta etapa.</p></div><span className="status-tag">{seasonFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
       <div className="result-bulk-footer"><span>{seasonFinalized?"Temporada concluída. A evolução já foi aplicada.":seasonComplete?"Todos os resultados foram preenchidos. Confirme para finalizar a temporada.":"Complete Sprint e Feature de todas as etapas para habilitar a confirmação."}</span><button className="primary-button" disabled={!seasonComplete} onClick={finalizeSeason}><Check size={16}/> {seasonFinalized?"Temporada já finalizada":"Finalizar temporada e evoluir pilotos"}</button></div>
     </div>}
     {tab==="classificacao"&&<div className="champ-standings-grid">
