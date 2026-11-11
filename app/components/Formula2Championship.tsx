@@ -5,6 +5,7 @@ import { useAuth } from "@/app/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, buildSuperLicenseAwards, getSuperLicensePoints, getSuperLicenseWindow, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
+import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
 type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string };
@@ -108,6 +109,7 @@ export default function Formula2Championship() {
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f2:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
+  const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
@@ -120,7 +122,9 @@ export default function Formula2Championship() {
   const profileDriver=drivers.find(d=>d.id===profileDriverId);
   const profileTeam=teams.find(t=>t.id===profileTeamId);
   const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
-  const profileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const baseProfileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const profileDevelopment=profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined;
+  const profileDetails=profileDevelopment ? { ...baseProfileDetails!, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
@@ -159,7 +163,9 @@ export default function Formula2Championship() {
     );
     if (error) { setNotice("Falha ao salvar a Superlicença: " + error.message); return; }
     setLicenseAwards(nextAwards);
-    setNotice("Classificação final da Fórmula 2 " + ACTIVE_SEASON + " confirmada. Pontos salvos na nuvem.");
+    const nextDevelopment = evolveDriverSeason(development, "F2", ACTIVE_SEASON, drivers, driverDetails, results);
+    setDevelopment(nextDevelopment);
+    setNotice("Classificação final da Fórmula 2 " + ACTIVE_SEASON + " confirmada. Superlicença e evolução dos pilotos salvas na nuvem.");
   };
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileDriver?.licenseId);
   const profileLicenseEligible = profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
@@ -181,8 +187,8 @@ export default function Formula2Championship() {
     setNotice(rows.length+" resultado(s) de "+session+" registrados. Classificações atualizadas.");
   };
 
-  if(racesError||resultsError||licenseError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 2.</div>;
-  if(!racesReady||!resultsReady||!licenseReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 2...</div>;
+  if(racesError||resultsError||licenseError||developmentError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 2.</div>;
+  if(!racesReady||!resultsReady||!licenseReady||!developmentReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 2...</div>;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
@@ -229,6 +235,11 @@ export default function Formula2Championship() {
         <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desenvolvimento · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
         <div className="driver-attributes-list">
           {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileDetails?.attributes[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDetails?.attributes[attribute.key] ?? 0}%`}}/></div></div>)}
+        </div>
+        <div className="driver-facts-grid" style={{marginTop:16}}>
+          <div className="panel driver-fact"><span>POTENCIAL</span><b>{profileDevelopment?.potential ?? "—"} / 100</b></div>
+          <div className="panel driver-fact"><span>EVOLUÇÃO NA ÚLTIMA TEMPORADA</span><b>{profileDevelopment?.history.at(-1)?.change > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
+          <div className="panel driver-fact"><span>TEMPORADAS REGISTRADAS</span><b>{profileDevelopment?.history.length ?? 0}</b></div>
         </div>
       </div>
     </div> : <>
