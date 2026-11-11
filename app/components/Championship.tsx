@@ -6,7 +6,7 @@ import { evolveDriverSeason, type DriverDevelopmentState } from "@/lib/driverDev
 import { ACTIVE_SEASON } from "@/lib/superLicense";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
-type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" };
 type Team = { id: string; name: string; color: string; short: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; driverId: string; position: number | null; points: number; status: string };
