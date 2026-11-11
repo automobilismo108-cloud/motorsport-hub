@@ -96,11 +96,6 @@ const initialDriversSeed: Driver[] = [
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
 ];
 
-const migrateDrivers = (legacy: any): Driver[] | undefined =>
-  Array.isArray(legacy?.drivers) ? legacy.drivers : undefined;
-const migrateMoves = (legacy: any): Move[] | undefined =>
-  Array.isArray(legacy?.moves) ? legacy.moves : undefined;
-
 const registeredChampionships = [
   { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:String(ACTIVE_SEASON), organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
   { id:"f2", name:"FIA Formula 2 Championship", category:"Fórmula 2", season:String(ACTIVE_SEASON), organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:14 },
