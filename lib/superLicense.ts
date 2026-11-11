@@ -68,7 +68,7 @@ function uniqueAwards(awards: SuperLicenseAward[]): SuperLicenseAward[] {
   for (const award of awards) {
     const key = [award.driverKey, award.category, award.season].join("|");
     const previous = unique.get(key);
-    if (!previous || award.version > previous.version || (award.version === previous.version && award.points >= previous.points)) {
+    if (!previous || award.version >= previous.version) {
       unique.set(key, award);
     }
   }
