@@ -139,8 +139,8 @@ export default function Home() {
   const profileTeam = teams.find(t => t.id === profileTeamId);
   const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.teamId === profileTeam.id) : [];
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
-  const profileDevelopment = profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined;
-  const profileDetails = profileDevelopment && baseProfileDetails ? { ...baseProfileDetails, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
+  const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
+  const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
