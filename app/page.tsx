@@ -181,7 +181,7 @@ export default function Home() {
   const f2Drivers = marketState.f2 as F2Driver[];
   const f3Drivers = marketState.f3 as F3Driver[];
   const moves = marketState.moves as Move[];
-  const freeAgents = marketState.freeAgents ?? INITIAL_FREE_AGENT_POOL.drivers;
+  const freeAgents = (marketState.freeAgents ?? INITIAL_FREE_AGENT_POOL.drivers).map(({category:_oldCategory,...driver})=>driver);
   const [marketTab,setMarketTab] = useState<"movements"|"free">("movements");
   const setF2Drivers: Dispatch<SetStateAction<F2Driver[]>> = action => setMarketState(old => ({
     ...old, f2: typeof action === "function" ? (action as (value:F2Driver[])=>F2Driver[])(old.f2 as F2Driver[]) : action as TransferDriver[]
@@ -229,7 +229,7 @@ export default function Home() {
     const isFreeAgent = selectedCategory==="LIVRE";
     const sourceId = selectedDriver.slice(separator+1);
     const freeDriver = isFreeAgent ? freeAgents.find(d=>d.id===sourceId) : undefined;
-    const sourceCategory = (isFreeAgent ? undefined : selectedCategory) as "F1"|"F2"|"F3"|undefined;
+    const sourceCategory = (isFreeAgent ? "F1" : selectedCategory) as "F1"|"F2"|"F3";
     if (!isFreeAgent && !sourceCategory) { setNotice("Selecione um piloto válido."); return; }
     const sourceList = sourceCategory==="F1" ? marketState.f1 : sourceCategory==="F2" ? marketState.f2 : marketState.f3;
     const driver = isFreeAgent ? freeDriver : sourceList.find(d=>d.id===sourceId && d.status!=="Transferido" && d.status!=="Aposentado");
