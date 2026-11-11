@@ -407,7 +407,7 @@ export default function Home() {
               <span className="status-tag">EQUIPE INSCRITA</span>
             </div>
             <div className="driver-facts-grid">
-              <div className="panel driver-fact"><span>SEDE DA EQUIPE</span><b>{profileTeamHeadquarters ?? "Não informada"}</b></div>
+              <div className="panel driver-fact"><span>SEDE DA EQUIPE</span><b>{String(profileTeamHeadquarters ?? "Não informada")}</b></div>
               <div className="panel driver-fact"><span>PILOTOS CADASTRADOS</span><b>{profileTeamDrivers.length} / 2</b></div>
               <div className="panel driver-fact"><span>VAGAS DISPONÍVEIS</span><b>{Math.max(0,2-profileTeamDrivers.length)}</b></div>
             </div>
@@ -419,7 +419,7 @@ export default function Home() {
             </div>
             <div className="panel team-profile-roster">
               <div className="panel-head"><div><h2>Dupla de pilotos</h2><p>Pilotos atualmente vinculados à equipe</p></div><span className="status-tag">{profileTeamDrivers.length} CADASTRADO(S)</span></div>
-              <div className="team-profile-driver-list">{profileTeamDrivers.length ? profileTeamDrivers.map(d=><div className="team-profile-driver" key={d.id}><span className="driver-number">#{d.number}</span><div><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button><small>{d.country} · {d.status}</small></div><ArrowUpRight size={15}/></div>) : <div className="empty-state">Nenhum piloto vinculado a esta equipe.</div>}</div>
+              <div className="team-profile-driver-list">{profileTeamDrivers.length ? profileTeamDrivers.map(d=><div className="team-profile-driver" key={d.id}><span className="driver-number">#{d.number}</span><div><button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id,profileCategory)}>{d.name}</button><small>{d.country} · {d.status}</small></div><ArrowUpRight size={15}/></div>) : <div className="empty-state">Nenhum piloto vinculado a esta equipe.</div>}</div>
             </div>
           </div>}
           {!profileDriver && !profileTeam && section==="Visão geral" && <>
