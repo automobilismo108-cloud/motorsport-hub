@@ -12,6 +12,7 @@ export type SuperLicenseAward = {
   position: number;
   points: number;
   version: number;
+  finalized?: boolean;
 };
 export type LicenseDriver = { id: string; name: string; licenseId: string };
 export type LicenseResult = { driverId: string; position: number | null; points: number; session?: "Sprint" | "Feature" };
@@ -36,6 +37,10 @@ export function getLegacyF1LicenseId(driverId: string): string | null {
   return LEGACY_F1_LICENSE_IDS[driverId] ?? null;
 }
 
+function legacyDriverKey(name: string): string {
+  return "driver:" + name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 export function normalizeLicenseAwards(value: unknown): SuperLicenseAward[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is Record<string, unknown> => !!item && typeof item === "object").map((item) => {
@@ -43,65 +48,80 @@ export function normalizeLicenseAwards(value: unknown): SuperLicenseAward[] {
     const category = item.category === "F3" ? "F3" : "F2";
     const season = Number(item.season) || ACTIVE_SEASON;
     const driverId = typeof item.driverId === "string" ? item.driverId : "";
-    const legacyKey = "driver:" + driverName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const driverKey = typeof item.driverKey === "string" && item.driverKey
+      ? item.driverKey
+      : legacyDriverKey(driverName);
     return {
-      id: typeof item.id === "string" ? item.id : category + "-" + season + "-" + (driverId || legacyKey),
-      driverKey: typeof item.driverKey === "string" && item.driverKey ? item.driverKey : legacyKey,
-      driverId, driverName, category, season,
-      position: Number(item.position) || 0, points: Number(item.points) || 0,
+      id: typeof item.id === "string" ? item.id : category + "-" + season + "-" + (driverId || driverKey),
+      driverKey, driverId, driverName, category, season,
+      position: Number(item.position) || 0,
+      points: Math.max(0, Number(item.points) || 0),
       version: Number(item.version) || 1,
+      finalized: item.finalized === true,
     };
   });
+}
+
+/** Collapse historical duplicate rows for the same driver/category/season before adding points. */
+function uniqueAwards(awards: SuperLicenseAward[]): SuperLicenseAward[] {
+  const unique = new Map<string, SuperLicenseAward>();
+  for (const award of awards) {
+    const key = [award.driverKey, award.category, award.season].join("|");
+    const previous = unique.get(key);
+    if (!previous || award.version > previous.version || (award.version === previous.version && award.points >= previous.points)) {
+      unique.set(key, award);
+    }
+  }
+  return [...unique.values()];
 }
 
 export function getSuperLicensePoints(awards: SuperLicenseAward[], driverKey: string | null | undefined, activeSeason = ACTIVE_SEASON): number {
   if (!driverKey) return 0;
   const firstSeason = activeSeason - 2;
-  return awards.reduce((total, award) => award.driverKey === driverKey && award.season >= firstSeason && award.season <= activeSeason ? total + award.points : total, 0);
+  return uniqueAwards(awards).reduce((total, award) =>
+    award.driverKey === driverKey && award.season >= firstSeason && award.season <= activeSeason
+      ? total + award.points
+      : total, 0);
 }
 
 function compareSeasonDrivers(
-  a: { points: number; wins: number; podiums: number; positions: number[]; gridOrder: number },
-  b: { points: number; wins: number; podiums: number; positions: number[]; gridOrder: number },
+  a: { points: number; wins: number; podiums: number; secondPlaces: number; thirdPlaces: number; gridOrder: number },
+  b: { points: number; wins: number; podiums: number; secondPlaces: number; thirdPlaces: number; gridOrder: number },
 ): number {
-  if (a.points !== b.points) return b.points - a.points;
-  if (a.wins !== b.wins) return b.wins - a.wins;
-  if (a.podiums !== b.podiums) return b.podiums - a.podiums;
-  if (a.positions[1] !== b.positions[1]) return b.positions[1] - a.positions[1];
-  if (a.positions[2] !== b.positions[2]) return b.positions[2] - a.positions[2];
-  return a.gridOrder - b.gridOrder;
+  return b.points - a.points ||
+    b.wins - a.wins ||
+    b.podiums - a.podiums ||
+    b.secondPlaces - a.secondPlaces ||
+    b.thirdPlaces - a.thirdPlaces ||
+    a.gridOrder - b.gridOrder;
 }
 
 export function buildSuperLicenseAwards(category: LicenseCategory, season: number, drivers: LicenseDriver[], results: LicenseResult[]): SuperLicenseAward[] {
   const ranked = drivers.map((driver, gridOrder) => {
-    const rows = results.filter((result) => result.driverId === driver.id);
-    const positions = Array.from({ length: 40 }, (_, index) => rows.filter((result) => result.position === index + 1).length);
+    const rows = results.filter(result => result.driverId === driver.id);
     return {
       driver,
-      points: rows.reduce((total, result) => total + result.points, 0),
-      wins: positions[0],
-      podiums: positions[0] + positions[1] + positions[2],
-      positions,
+      points: rows.reduce((total, result) => total + Math.max(0, Number(result.points) || 0), 0),
+      wins: rows.filter(result => result.position === 1).length,
+      podiums: rows.filter(result => result.position !== null && result.position <= 3).length,
+      secondPlaces: rows.filter(result => result.position === 2).length,
+      thirdPlaces: rows.filter(result => result.position === 3).length,
       gridOrder,
     };
   }).sort(compareSeasonDrivers);
 
   if (ranked.length === 0 || ranked[0].points <= 0) return [];
-  const awards: SuperLicenseAward[] = [];
-  let rank = 0;
-  for (let index = 0; index < ranked.length; index += 1) {
-    if (index === 0 || compareSeasonDrivers(ranked[index], ranked[index - 1]) !== 0) rank = index + 1;
-    if (rank > 10) continue;
-    const entry = ranked[index];
-    awards.push({
-      id: category + "-" + season + "-" + entry.driver.licenseId,
-      driverKey: entry.driver.licenseId, driverId: entry.driver.id,
-      driverName: entry.driver.name, category, season, position: rank,
-      points: POINTS_BY_CATEGORY[category][rank - 1],
-      version: 2,
-    });
-  }
-  return awards;
+  return ranked.slice(0, 10).map((entry, index) => ({
+    id: category + "-" + season + "-" + entry.driver.licenseId,
+    driverKey: entry.driver.licenseId,
+    driverId: entry.driver.id,
+    driverName: entry.driver.name,
+    category,
+    season,
+    position: index + 1,
+    points: POINTS_BY_CATEGORY[category][index],
+    version: 3,
+  }));
 }
 
 export function getSuperLicenseWindow(activeSeason = ACTIVE_SEASON): [number, number, number] {
