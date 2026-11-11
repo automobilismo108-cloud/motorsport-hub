@@ -8,7 +8,7 @@ import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-export type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" };
+export type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" | "Aposentado" };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
@@ -128,7 +128,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
   const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
 
   const teamName=(id:string)=>f3Teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
-  const activeDrivers=drivers.filter(d=>d.status!=="Transferido");
+  const activeDrivers=drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado");
   const profileDriver=drivers.find(d=>d.id===profileDriverId);
   const profileTeam=f3Teams.find(t=>t.id===profileTeamId);
   const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
