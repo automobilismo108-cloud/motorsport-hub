@@ -177,7 +177,7 @@ export default function Home() {
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
               <div className="driver-attributes-list">
-                {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileDetails?.attributes?.[attribute.key] ?? 0)}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDriver.attributes[attribute.key]}%`}}/></div></div>)}
+                {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileDetails?.attributes?.[attribute.key] ?? 0)}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDetails?.attributes?.[attribute.key] ?? 0}%`}}/></div></div>)}
               </div>
             </div>
           </div>}
