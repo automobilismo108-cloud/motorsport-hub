@@ -217,7 +217,7 @@ export default function Home() {
   const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : (profileTeam && "headquarters" in profileTeam ? profileTeam.headquarters : undefined);
   const baseProfileDetails = profileDriver ? activeDriverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
-  const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
+  const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails && "contractUntil" in baseProfileDetails ? baseProfileDetails.contractUntil : null, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const pilotsRoster = pilotsCategory==="F1"
     ? drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado").map(d=>({...d,teamLabel:teamName(d.teamId)}))
     : pilotsCategory==="F2"
