@@ -57,8 +57,7 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const [confirmReset,setConfirmReset]=useState(false);
 
 
-  const eligibleDrivers = drivers;
-  const blockedDrivers: Driver[] = [];
+  const eligibleDrivers = drivers.filter(d=>d.status!=="Transferido");
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
