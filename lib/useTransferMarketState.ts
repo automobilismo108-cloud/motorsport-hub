@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, useRef, type Dispatch, type SetStateAction } from "react";
 import { useAuth } from "@/app/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 
@@ -48,6 +48,7 @@ export function useTransferMarketState(initial: TransferMarketState): [
   const [state, setState] = useState<TransferMarketState>(initial);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
@@ -117,18 +118,16 @@ export function useTransferMarketState(initial: TransferMarketState): [
 
   useEffect(() => {
     if (!ready || error || !user || !supabase) return;
-    let cancelled = false;
-    const save = async () => {
+    const snapshot = state;
+    saveQueue.current = saveQueue.current.catch(() => undefined).then(async () => {
       const { error: saveError } = await supabase!
         .from("workspace_data")
-        .upsert({ user_id: user.id, data_key: MARKET_KEY, payload: state }, { onConflict: "user_id,data_key" });
-      if (saveError && !cancelled) {
+        .upsert({ user_id: user.id, data_key: MARKET_KEY, payload: snapshot }, { onConflict: "user_id,data_key" });
+      if (saveError) {
         console.error("Falha ao salvar o mercado de pilotos.", saveError);
         setError(saveError.message);
       }
-    };
-    void save();
-    return () => { cancelled = true; };
+    });
   }, [state, ready, error, user?.id]);
 
   return [state, setState, ready, error];
