@@ -135,8 +135,8 @@ export default function Formula2Championship() {
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
-    return {...d,points:rows.reduce((sum,r)=>sum+r.points,0),wins:rows.filter(r=>r.position===1).length,podiums:rows.filter(r=>r.position!==null&&r.position<=3).length,starts:rows.length};
-  }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums),[results]);
+    return {...d,points:rows.reduce((sum,r)=>sum+r.points,0),wins:rows.filter(r=>r.position===1).length,podiums:rows.filter(r=>r.position!==null&&r.position<=3).length,secondPlaces:rows.filter(r=>r.position===2).length,thirdPlaces:rows.filter(r=>r.position===3).length,starts:rows.length};
+  }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums||b.secondPlaces-a.secondPlaces||b.thirdPlaces-a.thirdPlaces),[results]);
   const teamStandings=useMemo(()=>teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((sum,d)=>sum+d.points,0)})).sort((a,b)=>b.points-a.points),[standings]);
   const selectedRace=races.find(r=>r.id===Number(raceId));
   const sessionResults=results.filter(r=>r.raceId===Number(raceId)&&r.session===session);
