@@ -249,7 +249,7 @@ export default function Formula3Championship() {
         </div>
         <div className="driver-facts-grid" style={{marginTop:16}}>
           <div className="panel driver-fact"><span>POTENCIAL</span><b>{profileDevelopment?.potential ?? "—"} / 100</b></div>
-          <div className="panel driver-fact"><span>EVOLUÇÃO NA ÚLTIMA TEMPORADA</span><b>{profileDevelopment?.history.at(-1)?.change > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
+          <div className="panel driver-fact"><span>EVOLUÇÃO NA ÚLTIMA TEMPORADA</span><b>{(profileDevelopment?.history.at(-1)?.change ?? 0) > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
           <div className="panel driver-fact"><span>TEMPORADAS REGISTRADAS</span><b>{profileDevelopment?.history.length ?? 0}</b></div>
         </div>
       </div>
