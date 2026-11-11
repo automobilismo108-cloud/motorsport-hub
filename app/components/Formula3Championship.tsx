@@ -7,11 +7,10 @@ import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, buildSuperLicenseAwards, 
 import { useCloudState } from "@/lib/useCloudState";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-type Driver = { id: string; name: string; country: string; number: number; teamId: string };
+type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
-type SuperLicenseAward = { id: string; driverId: string; driverName: string; category: "F2" | "F3"; season: number; position: number; points: number };
 
 const teams: Team[] = [
   {id:"cam",name:"Campos Racing",short:"CAM",color:"#e23d3d",headquarters:"Alzira, Valência, Espanha"},
@@ -27,36 +26,36 @@ const teams: Team[] = [
 ];
 
 const drivers: Driver[] = [
-  {id:"f3-1",name:"Théophile Naël",country:"França",number:1,teamId:"cam"},
-  {id:"f3-2",name:"Ugo Ugochukwu",country:"Estados Unidos",number:2,teamId:"cam"},
-  {id:"f3-3",name:"Ernesto Rivera",country:"México",number:3,teamId:"cam"},
-  {id:"f3-4",name:"Noah Stromsted",country:"Dinamarca",number:4,teamId:"tri"},
-  {id:"f3-5",name:"Freddie Slater",country:"Reino Unido",number:5,teamId:"tri"},
-  {id:"f3-6",name:"Matteo De Palo",country:"Itália",number:6,teamId:"tri"},
-  {id:"f3-7",name:"Mattia Colnaghi",country:"Argentina",number:7,teamId:"mp"},
-  {id:"f3-8",name:"Tuukka Taponen",country:"Finlândia",number:8,teamId:"mp"},
-  {id:"f3-9",name:"Alessandro Giusti",country:"França",number:9,teamId:"mp"},
-  {id:"f3-10",name:"Taito Kato",country:"Japão",number:10,teamId:"art"},
-  {id:"f3-11",name:"Maciej Gladysz",country:"Polônia",number:11,teamId:"art"},
-  {id:"f3-12",name:"Kanato Le",country:"Japão",number:12,teamId:"art"},
-  {id:"f3-14",name:"Hiyu Yamakoshi",country:"Japão",number:14,teamId:"var"},
-  {id:"f3-15",name:"Enzo Deligny",country:"França",number:15,teamId:"var"},
-  {id:"f3-16",name:"Bruno Del Pino",country:"Espanha",number:16,teamId:"var"},
-  {id:"f3-17",name:"Pedro Clerot",country:"Brasil",number:17,teamId:"rod"},
-  {id:"f3-18",name:"Brando Badoer",country:"Itália",number:18,teamId:"rod"},
-  {id:"f3-19",name:"Niccolò Maccagnani",country:"Itália",number:19,teamId:"rod"},
-  {id:"f3-20",name:"Alex Powell",country:"Estados Unidos",number:20,teamId:"pre"},
-  {id:"f3-21",name:"James Wharton",country:"Austrália",number:21,teamId:"pre"},
-  {id:"f3-22",name:"Jose Garfias",country:"México",number:22,teamId:"pre"},
-  {id:"f3-23",name:"Woohyun Shin",country:"Coreia do Sul",number:23,teamId:"hit"},
-  {id:"f3-24",name:"Fionn McLaughlin",country:"Irlanda",number:24,teamId:"hit"},
-  {id:"f3-25",name:"Jin Nakamura",country:"Japão",number:25,teamId:"hit"},
-  {id:"f3-26",name:"Ricardo Escotto",country:"México",number:26,teamId:"aix"},
-  {id:"f3-27",name:"Yevan David",country:"Sri Lanka",number:27,teamId:"aix"},
-  {id:"f3-28",name:"Fernando Barrichello",country:"Brasil",number:28,teamId:"aix"},
-  {id:"f3-29",name:"Nicola Lacorte",country:"Itália",number:29,teamId:"dam"},
-  {id:"f3-30",name:"Nandhavud Bhirombhakdi",country:"Tailândia",number:30,teamId:"dam"},
-  {id:"f3-31",name:"Gerrard Xie",country:"China",number:31,teamId:"dam"}
+  {id:"f3-1",licenseId:"driver:theophile-nael",name:"Théophile Naël",country:"França",number:1,teamId:"cam"},
+  {id:"f3-2",licenseId:"driver:ugo-ugochukwu",name:"Ugo Ugochukwu",country:"Estados Unidos",number:2,teamId:"cam"},
+  {id:"f3-3",licenseId:"driver:ernesto-rivera",name:"Ernesto Rivera",country:"México",number:3,teamId:"cam"},
+  {id:"f3-4",licenseId:"driver:noah-stromsted",name:"Noah Stromsted",country:"Dinamarca",number:4,teamId:"tri"},
+  {id:"f3-5",licenseId:"driver:freddie-slater",name:"Freddie Slater",country:"Reino Unido",number:5,teamId:"tri"},
+  {id:"f3-6",licenseId:"driver:matteo-de-palo",name:"Matteo De Palo",country:"Itália",number:6,teamId:"tri"},
+  {id:"f3-7",licenseId:"driver:mattia-colnaghi",name:"Mattia Colnaghi",country:"Argentina",number:7,teamId:"mp"},
+  {id:"f3-8",licenseId:"driver:tuukka-taponen",name:"Tuukka Taponen",country:"Finlândia",number:8,teamId:"mp"},
+  {id:"f3-9",licenseId:"driver:alessandro-giusti",name:"Alessandro Giusti",country:"França",number:9,teamId:"mp"},
+  {id:"f3-10",licenseId:"driver:taito-kato",name:"Taito Kato",country:"Japão",number:10,teamId:"art"},
+  {id:"f3-11",licenseId:"driver:maciej-gladysz",name:"Maciej Gladysz",country:"Polônia",number:11,teamId:"art"},
+  {id:"f3-12",licenseId:"driver:kanato-le",name:"Kanato Le",country:"Japão",number:12,teamId:"art"},
+  {id:"f3-14",licenseId:"driver:hiyu-yamakoshi",name:"Hiyu Yamakoshi",country:"Japão",number:14,teamId:"var"},
+  {id:"f3-15",licenseId:"driver:enzo-deligny",name:"Enzo Deligny",country:"França",number:15,teamId:"var"},
+  {id:"f3-16",licenseId:"driver:bruno-del-pino",name:"Bruno Del Pino",country:"Espanha",number:16,teamId:"var"},
+  {id:"f3-17",licenseId:"driver:pedro-clerot",name:"Pedro Clerot",country:"Brasil",number:17,teamId:"rod"},
+  {id:"f3-18",licenseId:"driver:brando-badoer",name:"Brando Badoer",country:"Itália",number:18,teamId:"rod"},
+  {id:"f3-19",licenseId:"driver:niccolo-maccagnani",name:"Niccolò Maccagnani",country:"Itália",number:19,teamId:"rod"},
+  {id:"f3-20",licenseId:"driver:alex-powell",name:"Alex Powell",country:"Estados Unidos",number:20,teamId:"pre"},
+  {id:"f3-21",licenseId:"driver:james-wharton",name:"James Wharton",country:"Austrália",number:21,teamId:"pre"},
+  {id:"f3-22",licenseId:"driver:jose-garfias",name:"Jose Garfias",country:"México",number:22,teamId:"pre"},
+  {id:"f3-23",licenseId:"driver:woohyun-shin",name:"Woohyun Shin",country:"Coreia do Sul",number:23,teamId:"hit"},
+  {id:"f3-24",licenseId:"driver:fionn-mclaughlin",name:"Fionn McLaughlin",country:"Irlanda",number:24,teamId:"hit"},
+  {id:"f3-25",licenseId:"driver:jin-nakamura",name:"Jin Nakamura",country:"Japão",number:25,teamId:"hit"},
+  {id:"f3-26",licenseId:"driver:ricardo-escotto",name:"Ricardo Escotto",country:"México",number:26,teamId:"aix"},
+  {id:"f3-27",licenseId:"driver:yevan-david",name:"Yevan David",country:"Sri Lanka",number:27,teamId:"aix"},
+  {id:"f3-28",licenseId:"driver:fernando-barrichello",name:"Fernando Barrichello",country:"Brasil",number:28,teamId:"aix"},
+  {id:"f3-29",licenseId:"driver:nicola-lacorte",name:"Nicola Lacorte",country:"Itália",number:29,teamId:"dam"},
+  {id:"f3-30",licenseId:"driver:nandhavud-bhirombhakdi",name:"Nandhavud Bhirombhakdi",country:"Tailândia",number:30,teamId:"dam"},
+  {id:"f3-31",licenseId:"driver:gerrard-xie",name:"Gerrard Xie",country:"China",number:31,teamId:"dam"}
 ];
 
 const initialRaces: Race[] = [
@@ -117,8 +116,8 @@ const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
 export default function Formula2Championship() {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
-  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:races`,initialRaces);
-  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:results`,[]);
+  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f3:${ACTIVE_SEASON}:races`,initialRaces);
+  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f3:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
