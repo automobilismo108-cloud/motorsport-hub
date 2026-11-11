@@ -204,6 +204,13 @@ export default function Home() {
     if (sourceCategory==="F3" && destinationCategory==="F1") {
       setNotice("A promoção precisa passar pela Fórmula 2: F3 → F2 → F1."); return;
     }
+    const identity = driver.licenseId ?? "driver:"+driver.id;
+    const duplicateActive = [...marketState.f1,...marketState.f2,...marketState.f3].some(d =>
+      d.licenseId===identity && d.id!==sourceId && d.status!=="Transferido" && d.status!=="Aposentado"
+    );
+    if (duplicateActive) {
+      setNotice("Este piloto já aparece em outro elenco ativo. A movimentação foi bloqueada para evitar duplicidade."); return;
+    }
     if (sourceCategory===destinationCategory && driver.teamId===target.id) {
       setNotice("Este piloto já pertence a essa equipe."); return;
     }
