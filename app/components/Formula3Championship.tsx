@@ -149,33 +149,40 @@ export default function Formula3Championship({development,setDevelopment}:{devel
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const licenseWindow = getSuperLicenseWindow();
   const seasonAlreadyFinalized = licenseAwards.some(a => a.category === "F3" && a.season === ACTIVE_SEASON && Number(a.version) >= 2);
+  const developmentAlreadyApplied = drivers.every(d => (development[d.licenseId]?.history ?? []).some(item => item.season === ACTIVE_SEASON));
   const seasonComplete = races.length > 0 && races.every(r =>
     (["Sprint", "Feature"] as const).every(kind =>
       drivers.every(d => results.some(x => x.raceId === r.id && x.session === kind && x.driverId === d.id))
     )
   );
+  const seasonFinalized = seasonAlreadyFinalized && developmentAlreadyApplied;
   const finalizeSeason = async () => {
     if (!licenseReady) { setNotice("Aguarde a sincronização da Superlicença."); return; }
-    if (seasonAlreadyFinalized) { setNotice("Esta temporada já foi finalizada; os pontos não serão duplicados."); return; }
     if (!seasonComplete) { setNotice("Registre todos os pilotos em Sprint e Feature de todas as etapas antes de finalizar."); return; }
-    if (!user || !supabase) { setNotice("Não foi possível confirmar sua sessão para salvar a Superlicença."); return; }
-    const awards = buildSuperLicenseAwards("F3", ACTIVE_SEASON, drivers, results);
-    if (!awards.length) { setNotice("Não foi possível gerar a classificação final."); return; }
+    if (seasonFinalized) { setNotice("Esta temporada já foi finalizada; os pontos e a evolução não serão duplicados."); return; }
+    if (!user || !supabase) { setNotice("Não foi possível confirmar sua sessão para salvar a temporada."); return; }
     const { error: resultsSaveError } = await supabase.from("workspace_data").upsert(
       { user_id: user.id, data_key: `championship:f3:${ACTIVE_SEASON}:results`, payload: results },
       { onConflict: "user_id,data_key" }
     );
-    if (resultsSaveError) { setNotice("Não foi possível salvar os resultados antes da Superlicença: " + resultsSaveError.message); return; }
-    const nextAwards = [...normalizedLicenseAwards.filter(a => !(a.category === "F3" && a.season === ACTIVE_SEASON)), ...awards];
-    const { error } = await supabase.from("workspace_data").upsert(
-      { user_id: user.id, data_key: "superlicense:awards", payload: nextAwards },
-      { onConflict: "user_id,data_key" }
-    );
-    if (error) { setNotice("Falha ao salvar a Superlicença: " + error.message); return; }
-    setLicenseAwards(nextAwards);
-    const nextDevelopment = evolveDriverSeason(development, "F3", ACTIVE_SEASON, drivers, driverDetails, results);
-    setDevelopment(nextDevelopment);
-    setNotice("Classificação final da Fórmula 3 " + ACTIVE_SEASON + " confirmada. Superlicença e evolução dos pilotos salvas na nuvem.");
+    if (resultsSaveError) { setNotice("Não foi possível salvar os resultados antes da finalização: " + resultsSaveError.message); return; }
+    let nextAwards = normalizedLicenseAwards;
+    if (!seasonAlreadyFinalized) {
+      const awards = buildSuperLicenseAwards("F3", ACTIVE_SEASON, drivers, results);
+      if (awards.length) {
+        nextAwards = [...normalizedLicenseAwards.filter(a => !(a.category === "F3" && a.season === ACTIVE_SEASON)), ...awards];
+        const { error } = await supabase.from("workspace_data").upsert(
+          { user_id: user.id, data_key: "superlicense:awards", payload: nextAwards },
+          { onConflict: "user_id,data_key" }
+        );
+        if (error) { setNotice("Falha ao salvar a Superlicença: " + error.message); return; }
+        setLicenseAwards(nextAwards);
+      }
+    }
+    if (!developmentAlreadyApplied) {
+      setDevelopment(evolveDriverSeason(development, "F3", ACTIVE_SEASON, drivers, driverDetails, results));
+    }
+    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 3 " + (seasonAlreadyFinalized ? "teve a evolução dos pilotos aplicada." : "finalizada. Superlicença e evolução dos pilotos atualizadas."));
   };
   const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileDriver?.licenseId);
   const profileLicenseEligible = profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
@@ -260,7 +267,7 @@ export default function Formula3Championship({development,setDevelopment}:{devel
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}>
-      <div className="panel-head"><div><h2>Superlicença FIA · Temporada {ACTIVE_SEASON}</h2><p>Fórmula 3: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
+      <div className="panel-head"><div><h2>Superlicença FIA · Temporada {ACTIVE_SEASON}</h2><p>Fórmula 3: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
       <div className="result-bulk-footer"><span>{seasonAlreadyFinalized?"Pontos já registrados.":seasonComplete?"Todos os resultados foram preenchidos. Confirme para creditar os pontos.":"Complete Sprint e Feature de todas as etapas para habilitar a confirmação."}</span><button className="primary-button" disabled={!seasonComplete||seasonAlreadyFinalized||!licenseReady||!!licenseError} onClick={finalizeSeason}><Check size={16}/> Confirmar classificação final</button></div>
       {licenseError&&<p className="empty-state">Não foi possível sincronizar a Superlicença.</p>}
     </div>}
