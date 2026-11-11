@@ -5,8 +5,8 @@ import { ACTIVE_SEASON, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLi
 import { useCloudState } from "@/lib/useCloudState";
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
-import Formula2Championship, { initialF2Drivers, f2Teams } from "./components/Formula2Championship";
-import Formula3Championship, { initialF3Drivers, f3Teams } from "./components/Formula3Championship";
+import Formula2Championship, { initialF2Drivers, f2Teams, type Driver as F2Driver } from "./components/Formula2Championship";
+import Formula3Championship, { initialF3Drivers, f3Teams, type Driver as F3Driver } from "./components/Formula3Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
@@ -118,8 +118,8 @@ export default function Home() {
   const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDriversSeed, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
-  const [f2Drivers,setF2Drivers,f2DriversReady,f2DriversError] = useCloudState<typeof initialF2Drivers>("workspace:f2:drivers",initialF2Drivers);
-  const [f3Drivers,setF3Drivers,f3DriversReady,f3DriversError] = useCloudState<typeof initialF3Drivers>("workspace:f3:drivers",initialF3Drivers);
+  const [f2Drivers,setF2Drivers,f2DriversReady,f2DriversError] = useCloudState<F2Driver[]>("workspace:f2:drivers",initialF2Drivers);
+  const [f3Drivers,setF3Drivers,f3DriversReady,f3DriversError] = useCloudState<F3Driver[]>("workspace:f3:drivers",initialF3Drivers);
   const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",{});
   const [search, setSearch] = useState("");
