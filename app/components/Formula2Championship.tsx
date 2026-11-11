@@ -8,6 +8,7 @@ type Driver = { id: string; name: string; country: string; number: number; teamI
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
+type SuperLicenseAward = { id: string; driverId: string; driverName: string; category: "F2" | "F3"; season: number; position: number; points: number };
 
 const teams: Team[] = [
   {id:"inv",name:"Invicta Racing",short:"INV",color:"#e6c84f",headquarters:"Attleborough, Norfolk, Reino Unido"},
@@ -104,6 +105,7 @@ export default function Formula2Championship() {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>("championship:f2:2026:races",initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>("championship:f2:2026:results",[]);
+  const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [raceId,setRaceId] = useState("1");
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
   const [draft,setDraft] = useState<Record<string,{position:string;status:string}>>({});
@@ -127,6 +129,20 @@ export default function Formula2Championship() {
   const remaining=drivers.filter(d=>!sessionResults.some(r=>r.driverId===d.id));
   const filled=remaining.filter(d=>draft[d.id]&&(draft[d.id].position!==""||draft[d.id].status!=="Classificado")).length;
   const completed=races.filter(r=>results.some(x=>x.raceId===r.id)).length;
+  const seasonAlreadyFinalized=licenseAwards.some(a=>a.category==="F2"&&a.season===2026);
+  const seasonComplete=races.length>0&&races.every(r=>(["Sprint","Feature"] as const).every(kind=>drivers.every(d=>results.some(x=>x.raceId===r.id&&x.session===kind&&x.driverId===d.id))));
+  const finalizeSeason=()=>{
+    if(!licenseReady){setNotice("Aguarde a sincronização da Superlicença.");return;}
+    if(seasonAlreadyFinalized){setNotice("Esta temporada já foi finalizada; os pontos não serão duplicados.");return;}
+    if(!seasonComplete){setNotice("Registre todos os pilotos em Sprint e Feature de todas as etapas antes de finalizar.");return;}
+    const finalTable=drivers.map(d=>({...d,total:results.filter(x=>x.driverId===d.id).reduce((sum,x)=>sum+x.points,0)})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+    const pointsByPosition=[40,35,30,25,20,15,10,8,6,4];
+    const awards:SuperLicenseAward[]=finalTable.slice(0,10).map((d,index)=>({id:"F2-2026-"+d.id,driverId:d.id,driverName:d.name,category:"F2",season:2026,position:index+1,points:pointsByPosition[index]}));
+    setLicenseAwards(old=>[...old.filter(a=>!(a.category==="F2"&&a.season===2026)),...awards]);
+    setNotice("Classificação final da Fórmula 2 2026 confirmada. Pontos registrados uma única vez.");
+  };
+  const profileLicensePoints=licenseAwards.filter(a=>a.driverId===profileDriver?.id&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
+  const profileLicenseEligible=profileLicensePoints>=40;
 
   const saveResults=()=>{
     const used=new Set<number>();
@@ -145,8 +161,8 @@ export default function Formula2Championship() {
     setNotice(rows.length+" resultado(s) de "+session+" registrados. Classificações atualizadas.");
   };
 
-  if(racesError||resultsError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 2.</div>;
-  if(!racesReady||!resultsReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 2...</div>;
+  if(racesError||resultsError||licenseError)return <div className="notice">Não foi possível sincronizar os dados da Fórmula 2.</div>;
+  if(!racesReady||!resultsReady||!licenseReady)return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Sincronizando os dados da Fórmula 2...</div>;
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
@@ -182,6 +198,14 @@ export default function Formula2Championship() {
         <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
       </div>
       <div className="panel driver-attributes-panel">
+        <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos acumulados nas últimas três temporadas (2024–2026)</p></div><span className="status-tag">{profileLicenseEligible?"LICENCIADO":"EM FORMAÇÃO"}</span></div>
+        <div className="driver-facts-grid">
+          <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
+          <div className="panel driver-fact"><span>STATUS</span><b>{profileLicenseEligible?"Requisito atingido":"Ainda não elegível"}</b></div>
+          <div className="panel driver-fact"><span>VALIDADE</span><b>Janela móvel de 3 temporadas</b></div>
+        </div>
+      </div>
+      <div className="panel driver-attributes-panel">
         <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desenvolvimento · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
         <div className="driver-attributes-list">
           {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileDetails?.attributes[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDetails?.attributes[attribute.key] ?? 0}%`}}/></div></div>)}
@@ -194,6 +218,11 @@ export default function Formula2Championship() {
       <button className={tab==="calendario"?"selected":""} onClick={()=>setTab("calendario")}><CalendarDays size={15}/> Calendário</button>
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
+    {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}>
+      <div className="panel-head"><div><h2>Superlicença FIA · Temporada 2026</h2><p>Fórmula 2: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
+      <div className="result-bulk-footer"><span>{seasonAlreadyFinalized?"Pontos já registrados.":seasonComplete?"Todos os resultados foram preenchidos. Confirme para creditar os pontos.":"Complete Sprint e Feature de todas as etapas para habilitar a confirmação."}</span><button className="primary-button" disabled={!seasonComplete||seasonAlreadyFinalized||!licenseReady||!!licenseError} onClick={finalizeSeason}><Check size={16}/> Confirmar classificação final</button></div>
+      {licenseError&&<p className="empty-state">Não foi possível sincronizar a Superlicença.</p>}
+    </div>}
     {tab==="classificacao"&&<div className="champ-standings-grid">
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada nas corridas Sprint e Feature</p></div><span className="status-tag">22 PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(d.teamId)}>{teamName(d.teamId)}</button></span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de equipes</h2><p>Soma dos pontos dos dois pilotos</p></div><span className="status-tag">11 EQUIPES</span></div><div className="constructor-list">{teamStandings.map((t,i)=><div className="constructor-row" key={t.id}><b className="champ-position">{String(i+1).padStart(2,"0")}</b><i style={{background:t.color}}/><button type="button" className="driver-name-link" onClick={()=>setProfileTeamId(t.id)}>{t.name}</button><strong>{t.points} <small>PTS</small></strong></div>)}</div></div>
