@@ -39,7 +39,7 @@ export function evolveDriverSeason(
     const base = baseDetails[driver.name];
     if (!base) return;
     const current = getDriverDevelopment(next, key, base, season);
-    if (current.history.some(item => item.category === category && item.season === season)) return;
+    if (current.history.some(item => item.season === season)) return;
     const position = index + 1;
     const percentile = ranked.length <= 1 ? 0 : (ranked.length - position) / (ranked.length - 1);
     let change = percentile >= 0.85 ? 2 : percentile >= 0.55 ? 1 : percentile <= 0.15 ? -1 : 0;
