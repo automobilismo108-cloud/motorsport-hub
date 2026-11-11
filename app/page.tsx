@@ -213,7 +213,7 @@ export default function Home() {
               <div className="panel-head"><div><h2>Desenvolvimento do piloto</h2><p>Evolução automática ao final de cada temporada</p></div><span className="status-tag">POTENCIAL {profileDevelopment?.potential ?? "—"}/100</span></div>
               <div className="driver-facts-grid">
                 <div className="panel driver-fact"><span>POTENCIAL</span><b>{profileDevelopment?.potential ?? "—"} / 100</b></div>
-                <div className="panel driver-fact"><span>EVOLUÇÃO RECENTE</span><b>{profileDevelopment?.history.at(-1)?.change > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
+                <div className="panel driver-fact"><span>EVOLUÇÃO RECENTE</span><b>{(profileDevelopment?.history.at(-1)?.change ?? 0) > 0 ? "+" : ""}{profileDevelopment?.history.at(-1)?.change ?? 0}</b></div>
                 <div className="panel driver-fact"><span>TEMPORADAS REGISTRADAS</span><b>{profileDevelopment?.history.length ?? 0}</b></div>
               </div>
               <div className="driver-attributes-list">{profileDevelopment?.history.slice().reverse().map((item,index)=><div className="driver-attribute-row" key={`${item.category}-${item.season}-${index}`}><div><b>{item.season} · {item.category}</b><strong>{item.change>0?"+":""}{item.change}</strong></div><small>Posição final: {item.position}º · Média {item.overallBefore} → {item.overallAfter}</small></div>)}</div>
