@@ -65,3 +65,18 @@
 .driver-attribute-track{height:7px;border-radius:10px;background:#27313d;overflow:hidden}
 .driver-attribute-track i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#a65c20,#ffad4d)}
 @media(max-width:650px){.driver-facts-grid{grid-template-columns:1fr}.driver-fact{padding:14px 16px}.driver-attributes-list{padding:7px 15px 13px}}
+
+
+/* Navegação e ficha individual de equipes */
+.team-name-link{font-size:inherit!important}
+.team-profile-page{display:flex;flex-direction:column;gap:15px}
+.team-profile-hero{display:flex;align-items:center;gap:18px;padding:24px}
+.team-profile-emblem{display:grid;place-items:center;min-width:76px;height:76px;border:1px solid;border-radius:12px;font:700 20px 'Space Grotesk'}
+.team-profile-roster{overflow:hidden}
+.team-profile-driver-list{padding:4px 20px 12px}
+.team-profile-driver{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #202a35}
+.team-profile-driver:last-child{border-bottom:0}
+.team-profile-driver>div{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.team-profile-driver small{font-size:9px;color:#8290a1}
+.team-profile-driver>svg{color:#718093}
+@media(max-width:600px){.team-profile-hero{align-items:flex-start;flex-wrap:wrap;padding:16px}.team-profile-emblem{min-width:58px;height:58px;font-size:16px}.team-profile-hero>.status-tag{width:100%}}
