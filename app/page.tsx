@@ -101,9 +101,9 @@ const migrateMoves = (legacy: any): Move[] | undefined =>
   Array.isArray(legacy?.moves) ? legacy.moves : undefined;
 
 const registeredChampionships = [
-  { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
-  { id:"f2", name:"FIA Formula 2 Championship", category:"Fórmula 2", season:"2026", organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:14 },
-  { id:"f3", name:"FIA Formula 3 Championship", category:"Fórmula 3", season:"2026", organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:10 },
+  { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:String(ACTIVE_SEASON), organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
+  { id:"f2", name:"FIA Formula 2 Championship", category:"Fórmula 2", season:String(ACTIVE_SEASON), organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:14 },
+  { id:"f3", name:"FIA Formula 3 Championship", category:"Fórmula 3", season:String(ACTIVE_SEASON), organizer:"FIA", description:"Classificação de pilotos e equipes, calendário com Sprint e Feature Race e lançamento de resultados.", status:"Em andamento", rounds:10 },
 ];
 
 const initialMoves: Move[] = [
@@ -157,7 +157,7 @@ export default function Home() {
     if (occupants.length >= 2) { setNotice(`${target.name} já possui dois titulares. Libere uma vaga antes de concluir.`); return; }
     const from = teamName(driver.teamId);
     setDrivers(old => old.map(d => d.id === driver.id ? {...d, teamId: target.id} : d));
-    setMoves(old => [{id:Date.now(),driver:driver.name,from,to:target.name,date:"Simulação 2026",status:"Concluída"},...old]);
+    setMoves(old => [{id:Date.now(),driver:driver.name,from,to:target.name,date:"Simulação " + ACTIVE_SEASON,status:"Concluída"},...old]);
     setModal(false); setSelectedDriver(""); setDestination("");
     setNotice(`Transferência simulada: ${driver.name} → ${target.name}`);
     setSection("Mercado");
@@ -202,7 +202,7 @@ export default function Home() {
             <div className="panel driver-profile-hero">
               <div className="driver-profile-number">#{profileDriver.number}</div>
               <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · {teamName(profileDriver.teamId)} · {profileDriver.status}</p></div>
-              <span className="status-tag">TEMPORADA 2026</span>
+              <span className="status-tag">TEMPORADA {ACTIVE_SEASON}</span>
             </div>
             <div className="driver-facts-grid">
               <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
@@ -237,7 +237,7 @@ export default function Home() {
             <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><ArrowLeft size={15}/> Voltar</button>
             <div className="panel team-profile-hero">
               <div className="team-profile-emblem" style={{background:profileTeam.color+"18",color:profileTeam.color,borderColor:profileTeam.color+"55"}}>{profileTeam.short}</div>
-              <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE</span><h2>{profileTeam.name}</h2><p>Fórmula 1 · Temporada 2026</p></div>
+              <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE</span><h2>{profileTeam.name}</h2><p>Fórmula 1 · Temporada {ACTIVE_SEASON}</p></div>
               <span className="status-tag">EQUIPE INSCRITA</span>
             </div>
             <div className="driver-facts-grid">
