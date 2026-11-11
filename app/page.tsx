@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getLegacyF1LicenseId, getSuperLicensePoints, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import Championship from "./components/Championship";
 import Formula2Championship from "./components/Formula2Championship";
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 
 type Team = { id: string; name: string; color: string; short: string };
-type Driver = { id: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string };
 
 const initialTeams: Team[] = [
@@ -69,28 +70,28 @@ const driverDetails: Record<string, { age: number; contractUntil: number | null;
 };
 
 const initialDriversSeed: Driver[] = [
-  {id:"d1",name:"Lando Norris",country:"Reino Unido",number:1,teamId:"mcl",status:"Titular"},
-  {id:"d2",name:"Oscar Piastri",country:"Austrália",number:81,teamId:"mcl",status:"Titular"},
-  {id:"d3",name:"George Russell",country:"Reino Unido",number:63,teamId:"mer",status:"Titular"},
-  {id:"d4",name:"Kimi Antonelli",country:"Itália",number:12,teamId:"mer",status:"Titular"},
-  {id:"d5",name:"Max Verstappen",country:"Países Baixos",number:3,teamId:"red",status:"Titular"},
-  {id:"d6",name:"Isack Hadjar",country:"França",number:6,teamId:"red",status:"Titular"},
-  {id:"d7",name:"Charles Leclerc",country:"Mônaco",number:16,teamId:"fer",status:"Titular"},
-  {id:"d8",name:"Lewis Hamilton",country:"Reino Unido",number:44,teamId:"fer",status:"Titular"},
-  {id:"d9",name:"Alexander Albon",country:"Tailândia",number:23,teamId:"wil",status:"Titular"},
-  {id:"d10",name:"Carlos Sainz",country:"Espanha",number:55,teamId:"wil",status:"Titular"},
-  {id:"d11",name:"Liam Lawson",country:"Nova Zelândia",number:30,teamId:"rb",status:"Titular"},
-  {id:"d12",name:"Arvid Lindblad",country:"Reino Unido",number:41,teamId:"rb",status:"Titular"},
-  {id:"d13",name:"Fernando Alonso",country:"Espanha",number:14,teamId:"ast",status:"Titular"},
-  {id:"d14",name:"Lance Stroll",country:"Canadá",number:18,teamId:"ast",status:"Titular"},
-  {id:"d15",name:"Esteban Ocon",country:"França",number:31,teamId:"has",status:"Titular"},
-  {id:"d16",name:"Oliver Bearman",country:"Reino Unido",number:87,teamId:"has",status:"Titular"},
-  {id:"d17",name:"Nico Hülkenberg",country:"Alemanha",number:27,teamId:"aud",status:"Titular"},
-  {id:"d18",name:"Gabriel Bortoleto",country:"Brasil",number:5,teamId:"aud",status:"Titular"},
-  {id:"d19",name:"Pierre Gasly",country:"França",number:10,teamId:"alp",status:"Titular"},
-  {id:"d20",name:"Franco Colapinto",country:"Argentina",number:43,teamId:"alp",status:"Titular"},
-  {id:"d21",name:"Sergio Pérez",country:"México",number:11,teamId:"cad",status:"Titular"},
-  {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
+  {id:"d1",licenseId:"driver:lando-norris",name:"Lando Norris",country:"Reino Unido",number:1,teamId:"mcl",status:"Titular"},
+  {id:"d2",licenseId:"driver:oscar-piastri",name:"Oscar Piastri",country:"Austrália",number:81,teamId:"mcl",status:"Titular"},
+  {id:"d3",licenseId:"driver:george-russell",name:"George Russell",country:"Reino Unido",number:63,teamId:"mer",status:"Titular"},
+  {id:"d4",licenseId:"driver:kimi-antonelli",name:"Kimi Antonelli",country:"Itália",number:12,teamId:"mer",status:"Titular"},
+  {id:"d5",licenseId:"driver:max-verstappen",name:"Max Verstappen",country:"Países Baixos",number:3,teamId:"red",status:"Titular"},
+  {id:"d6",licenseId:"driver:isack-hadjar",name:"Isack Hadjar",country:"França",number:6,teamId:"red",status:"Titular"},
+  {id:"d7",licenseId:"driver:charles-leclerc",name:"Charles Leclerc",country:"Mônaco",number:16,teamId:"fer",status:"Titular"},
+  {id:"d8",licenseId:"driver:lewis-hamilton",name:"Lewis Hamilton",country:"Reino Unido",number:44,teamId:"fer",status:"Titular"},
+  {id:"d9",licenseId:"driver:alexander-albon",name:"Alexander Albon",country:"Tailândia",number:23,teamId:"wil",status:"Titular"},
+  {id:"d10",licenseId:"driver:carlos-sainz",name:"Carlos Sainz",country:"Espanha",number:55,teamId:"wil",status:"Titular"},
+  {id:"d11",licenseId:"driver:liam-lawson",name:"Liam Lawson",country:"Nova Zelândia",number:30,teamId:"rb",status:"Titular"},
+  {id:"d12",licenseId:"driver:arvid-lindblad",name:"Arvid Lindblad",country:"Reino Unido",number:41,teamId:"rb",status:"Titular"},
+  {id:"d13",licenseId:"driver:fernando-alonso",name:"Fernando Alonso",country:"Espanha",number:14,teamId:"ast",status:"Titular"},
+  {id:"d14",licenseId:"driver:lance-stroll",name:"Lance Stroll",country:"Canadá",number:18,teamId:"ast",status:"Titular"},
+  {id:"d15",licenseId:"driver:esteban-ocon",name:"Esteban Ocon",country:"França",number:31,teamId:"has",status:"Titular"},
+  {id:"d16",licenseId:"driver:oliver-bearman",name:"Oliver Bearman",country:"Reino Unido",number:87,teamId:"has",status:"Titular"},
+  {id:"d17",licenseId:"driver:nico-hulkenberg",name:"Nico Hülkenberg",country:"Alemanha",number:27,teamId:"aud",status:"Titular"},
+  {id:"d18",licenseId:"driver:gabriel-bortoleto",name:"Gabriel Bortoleto",country:"Brasil",number:5,teamId:"aud",status:"Titular"},
+  {id:"d19",licenseId:"driver:pierre-gasly",name:"Pierre Gasly",country:"França",number:10,teamId:"alp",status:"Titular"},
+  {id:"d20",licenseId:"driver:franco-colapinto",name:"Franco Colapinto",country:"Argentina",number:43,teamId:"alp",status:"Titular"},
+  {id:"d21",licenseId:"driver:sergio-perez",name:"Sergio Pérez",country:"México",number:11,teamId:"cad",status:"Titular"},
+  {id:"d22",licenseId:"driver:valtteri-bottas",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
 ];
 
 const migrateDrivers = (legacy: any): Driver[] | undefined =>
@@ -116,6 +117,7 @@ export default function Home() {
   const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDriversSeed, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
+  const [licenseAwards,,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
@@ -133,6 +135,11 @@ export default function Home() {
   const profileTeam = teams.find(t => t.id === profileTeamId);
   const profileTeamDrivers = profileTeam ? drivers.filter(d => d.teamId === profileTeam.id) : [];
   const profileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
+  const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
+  const profileLicenseKey = profileDriver?.licenseId ?? (profileDriver ? getLegacyF1LicenseId(profileDriver.id) : null);
+  const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileLicenseKey);
+  const profileHasLegacyF1Seat = !!profileDriver && getLegacyF1LicenseId(profileDriver.id) !== null;
+  const profileLicenseEligible = profileHasLegacyF1Seat || profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
   const filteredDrivers = useMemo(() => drivers.filter(d =>
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
   ), [drivers, search, teams]);
@@ -159,8 +166,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError}</div>;
-  if (!driversReady || !movesReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (driversError || movesError || licenseError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError}</div>;
+  if (!driversReady || !movesReady || !licenseReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
@@ -197,6 +204,14 @@ export default function Home() {
               <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
               <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
               <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDetails?.contractUntil ? `Até o fim de ${profileDetails.contractUntil}` : "Não divulgado"}</b></div>
+            </div>
+            <div className="panel driver-attributes-panel">
+              <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos das temporadas {ACTIVE_SEASON-2}–{ACTIVE_SEASON}</p></div><span className="status-tag">{profileHasLegacyF1Seat?"GRID ATUAL · TRANSIÇÃO":profileLicenseEligible?"LICENCIADO":"NÃO ELEGÍVEL"}</span></div>
+              <div className="driver-facts-grid">
+                <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
+                <div className="panel driver-fact"><span>STATUS</span><b>{profileHasLegacyF1Seat?"Vaga F1 preexistente":profileLicenseEligible?"Requisito atingido":"Não pode disputar a F1"}</b></div>
+                <div className="panel driver-fact"><span>IDENTIDADE</span><b>{profileLicenseKey ?? "Não vinculada"}</b></div>
+              </div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
