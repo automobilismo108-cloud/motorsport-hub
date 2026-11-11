@@ -30,17 +30,17 @@ const initialTeams: Team[] = [
 ];
 
 const teamDetails: Record<string, { headquarters: string; power: number; downforce: number }> = {
-  mcl: { headquarters:"Woking, Inglaterra", power:94, downforce:95 },
-  mer: { headquarters:"Brackley, Inglaterra", power:96, downforce:92 },
-  red: { headquarters:"Milton Keynes, Inglaterra", power:95, downforce:94 },
-  fer: { headquarters:"Maranello, Itália", power:93, downforce:93 },
-  wil: { headquarters:"Grove, Inglaterra", power:91, downforce:88 },
-  rb: { headquarters:"Faenza, Itália", power:91, downforce:87 },
-  ast: { headquarters:"Silverstone, Inglaterra", power:90, downforce:91 },
-  has: { headquarters:"Kannapolis, Estados Unidos", power:90, downforce:87 },
-  aud: { headquarters:"Hinwil, Suíça", power:91, downforce:89 },
-  alp: { headquarters:"Enstone, Inglaterra", power:92, downforce:89 },
-  cad: { headquarters:"Fishers, Indiana, Estados Unidos", power:87, downforce:85 },
+  mcl: { headquarters:"Woking, Inglaterra", power:70, downforce:70 },
+  mer: { headquarters:"Brackley, Inglaterra", power:70, downforce:70 },
+  red: { headquarters:"Milton Keynes, Inglaterra", power:70, downforce:70 },
+  fer: { headquarters:"Maranello, Itália", power:70, downforce:70 },
+  wil: { headquarters:"Grove, Inglaterra", power:70, downforce:70 },
+  rb: { headquarters:"Faenza, Itália", power:70, downforce:70 },
+  ast: { headquarters:"Silverstone, Inglaterra", power:70, downforce:70 },
+  has: { headquarters:"Kannapolis, Estados Unidos", power:70, downforce:70 },
+  aud: { headquarters:"Hinwil, Suíça", power:70, downforce:70 },
+  alp: { headquarters:"Enstone, Inglaterra", power:70, downforce:70 },
+  cad: { headquarters:"Fishers, Indiana, Estados Unidos", power:70, downforce:70 },
 };
 
 const driverDetails: Record<string, { age: number; contractUntil: number | null; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
