@@ -104,7 +104,7 @@ const driverDetails: Record<string, { age: number; attributes: { racePace: numbe
 const sprintPoints = [10,8,6,5,4,3,2,1];
 const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
-export default function Formula2Championship({development,setDevelopment,drivers,setDrivers}:{development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>;drivers:Driver[];setDrivers:Dispatch<SetStateAction<Driver[]>>}) {
+export default function Formula2Championship({development,setDevelopment,drivers}:{development:DriverDevelopmentState;setDevelopment:Dispatch<SetStateAction<DriverDevelopmentState>>;drivers:Driver[];setDrivers:Dispatch<SetStateAction<Driver[]>>}) {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f2:${ACTIVE_SEASON}:results`,[]);
