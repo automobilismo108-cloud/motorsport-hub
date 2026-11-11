@@ -6,7 +6,7 @@ import { evolveDriverSeason, type DriverDevelopmentState } from "@/lib/driverDev
 import { ACTIVE_SEASON } from "@/lib/superLicense";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
-type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" };
+type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" | "Aposentado" };
 type Team = { id: string; name: string; color: string; short: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; driverId: string; position: number | null; points: number; status: string };
@@ -57,7 +57,7 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const [confirmReset,setConfirmReset]=useState(false);
 
 
-  const eligibleDrivers = drivers.filter(d=>d.status!=="Transferido");
+  const eligibleDrivers = drivers.filter(d=>d.status!=="Transferido" && d.status!=="Aposentado");
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
