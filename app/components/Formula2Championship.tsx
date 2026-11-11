@@ -8,7 +8,7 @@ import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
-type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string };
+type Driver = { id: string; licenseId: string; name: string; country: string; number: number; teamId: string; status?: "Ativo" | "Transferido" };
 type Team = { id: string; name: string; short: string; color: string; headquarters: string };
 type Race = { id: number; round: number; name: string; circuit: string; date: string; status: "Programada" | "Concluída" };
 type Result = { id: number; raceId: number; session: "Sprint" | "Feature"; driverId: string; position: number | null; points: number; status: string };
@@ -118,6 +118,7 @@ export default function Formula2Championship({development,setDevelopment,drivers
   const [profileTeamId,setProfileTeamId] = useState<string | null>(null);
 
   const teamName=(id:string)=>f2Teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
+  const activeDrivers=drivers.filter(d=>d.status!=="Transferido");
   const profileDriver=drivers.find(d=>d.id===profileDriverId);
   const profileTeam=f2Teams.find(t=>t.id===profileTeamId);
   const profileTeamDetails=profileTeam ? teamDetails[profileTeam.id] : undefined;
@@ -125,23 +126,23 @@ export default function Formula2Championship({development,setDevelopment,drivers
   const profileDevelopment=profileDriver && baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined;
   const profileDetails=profileDevelopment ? { ...baseProfileDetails!, age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
   const teamColor=(id:string)=>f2Teams.find(t=>t.id===id)?.color??"#8491a2";
-  const standings=useMemo(()=>drivers.map(d=>{
+  const standings=useMemo(()=>activeDrivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
     return {...d,points:rows.reduce((sum,r)=>sum+r.points,0),wins:rows.filter(r=>r.position===1).length,podiums:rows.filter(r=>r.position!==null&&r.position<=3).length,secondPlaces:rows.filter(r=>r.position===2).length,thirdPlaces:rows.filter(r=>r.position===3).length,starts:rows.length};
   }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums||b.secondPlaces-a.secondPlaces||b.thirdPlaces-a.thirdPlaces),[results]);
   const teamStandings=useMemo(()=>f2Teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((sum,d)=>sum+d.points,0)})).sort((a,b)=>b.points-a.points),[standings]);
   const selectedRace=races.find(r=>r.id===Number(raceId));
   const sessionResults=results.filter(r=>r.raceId===Number(raceId)&&r.session===session);
-  const remaining=drivers.filter(d=>!sessionResults.some(r=>r.driverId===d.id));
+  const remaining=activeDrivers.filter(d=>!sessionResults.some(r=>r.driverId===d.id));
   const filled=remaining.filter(d=>draft[d.id]&&(draft[d.id].position!==""||draft[d.id].status!=="Classificado")).length;
   const completed=races.filter(r=>results.some(x=>x.raceId===r.id)).length;
   const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
   const licenseWindow = getSuperLicenseWindow();
   const seasonAlreadyFinalized = licenseAwards.some(a => a.category === "F2" && a.season === ACTIVE_SEASON && Number(a.version) >= 2);
-  const developmentAlreadyApplied = drivers.every(d => (development[d.licenseId]?.history ?? []).some(item => item.season === ACTIVE_SEASON));
+  const developmentAlreadyApplied = activeDrivers.every(d => (development[d.licenseId]?.history ?? []).some(item => item.season === ACTIVE_SEASON));
   const seasonComplete = races.length > 0 && races.every(r =>
     (["Sprint", "Feature"] as const).every(kind =>
-      drivers.every(d => results.some(x => x.raceId === r.id && x.session === kind && x.driverId === d.id))
+      activeDrivers.every(d => results.some(x => x.raceId === r.id && x.session === kind && x.driverId === d.id))
     )
   );
   const seasonFinalized = seasonAlreadyFinalized && developmentAlreadyApplied;
@@ -217,7 +218,7 @@ export default function Formula2Championship({development,setDevelopment,drivers
       </div>
       <div className="driver-facts-grid">
         <div className="panel driver-fact"><span>SEDE</span><b>{profileTeam.headquarters}</b></div>
-        <div className="panel driver-fact"><span>PILOTOS</span><b>{drivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>
+        <div className="panel driver-fact"><span>PILOTOS</span><b>{activeDrivers.filter(d=>d.teamId===profileTeam.id).length} inscritos</b></div>
         <div className="panel driver-fact"><span>CAMPEONATO</span><b>FIA Formula 2 · {ACTIVE_SEASON}</b></div>
       </div>
       <div className="panel driver-attributes-panel">
@@ -226,7 +227,7 @@ export default function Formula2Championship({development,setDevelopment,drivers
           {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileTeamDetails?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileTeamDetails?.[attribute.key] ?? 0}%`}}/></div></div>)}
         </div>
       </div>
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada {ACTIVE_SEASON}</p></div></div><div className="constructor-list">{drivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos da equipe</h2><p>Dupla inscrita na temporada {ACTIVE_SEASON}</p></div></div><div className="constructor-list">{activeDrivers.filter(d=>d.teamId===profileTeam.id).map(d=><div className="constructor-row" key={d.id}><b className="champ-position">#{d.number}</b><span>{d.name}</span><button className="driver-name-link" onClick={()=>{setProfileTeamId(null);setProfileDriverId(d.id);}}>Ver ficha do piloto</button></div>)}</div></div>
     </div> : profileDriver ? <div className="driver-profile-page">
       <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
