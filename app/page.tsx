@@ -203,12 +203,16 @@ export default function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
 
 
-  const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
-  const openDriverProfile = (id: string) => { setProfileTeamId(null); setProfileDriverId(id); };
-  const openTeamProfile = (id: string) => { setProfileDriverId(null); setProfileTeamId(id); };
-  const profileDriver = drivers.find(d => d.id === profileDriverId);
-  const profileTeam = teams.find(t => t.id === profileTeamId);
-  const profileTeamDrivers = profileTeam ? drivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
+  const [profileCategory,setProfileCategory] = useState<"F1"|"F2"|"F3">("F1");
+  const profileDrivers = profileCategory==="F1" ? drivers : profileCategory==="F2" ? f2Drivers : f3Drivers;
+  const profileTeams = profileCategory==="F1" ? teams : profileCategory==="F2" ? f2Teams : f3Teams;
+  const teamName = (id: string) => (profileCategory==="F1"?teams:profileCategory==="F2"?f2Teams:f3Teams).find(t => t.id === id)?.name ?? "Sem equipe";
+  const openDriverProfile = (id: string,category:"F1"|"F2"|"F3"="F1") => { setProfileCategory(category);setProfileTeamId(null);setProfileDriverId(id); };
+  const openTeamProfile = (id: string,category:"F1"|"F2"|"F3"="F1") => { setProfileCategory(category);setProfileDriverId(null);setProfileTeamId(id); };
+  const profileDriver = profileDrivers.find(d => d.id === profileDriverId);
+  const profileTeam = profileTeams.find(t => t.id === profileTeamId);
+  const profileTeamDrivers = profileTeam ? profileDrivers.filter(d => d.status!=="Transferido" && d.status!=="Aposentado" && d.teamId === profileTeam.id) : [];
+  const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : profileTeam?.headquarters;
   const baseProfileDetails = profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails = profileDevelopment ? { age: profileDevelopment.age, contractUntil: baseProfileDetails?.contractUntil ?? null, attributes: profileDevelopment.attributes } : baseProfileDetails;
@@ -399,18 +403,18 @@ export default function Home() {
             <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><ArrowLeft size={15}/> Voltar</button>
             <div className="panel team-profile-hero">
               <div className="team-profile-emblem" style={{background:profileTeam.color+"18",color:profileTeam.color,borderColor:profileTeam.color+"55"}}>{profileTeam.short}</div>
-              <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE</span><h2>{profileTeam.name}</h2><p>Fórmula 1 · Temporada {ACTIVE_SEASON}</p></div>
+              <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE</span><h2>{profileTeam.name}</h2><p>{profileCategory==="F1"?"Fórmula 1":profileCategory==="F2"?"Fórmula 2":"Fórmula 3"} · Temporada {ACTIVE_SEASON}</p></div>
               <span className="status-tag">EQUIPE INSCRITA</span>
             </div>
             <div className="driver-facts-grid">
-              <div className="panel driver-fact"><span>SEDE DA EQUIPE</span><b>{teamDetails[profileTeam.id]?.headquarters ?? "Não informada"}</b></div>
+              <div className="panel driver-fact"><span>SEDE DA EQUIPE</span><b>{profileTeamHeadquarters ?? "Não informada"}</b></div>
               <div className="panel driver-fact"><span>PILOTOS CADASTRADOS</span><b>{profileTeamDrivers.length} / 2</b></div>
               <div className="panel driver-fact"><span>VAGAS DISPONÍVEIS</span><b>{Math.max(0,2-profileTeamDrivers.length)}</b></div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Atributos da equipe</h2><p>Avaliação estimada de desempenho · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
               <div className="driver-attributes-list">
-                {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{teamDetails[profileTeam.id]?.[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${teamDetails[profileTeam.id]?.[attribute.key] ?? 0}%`}}/></div></div>)}
+                {([{key:"power",label:"Power"},{key:"downforce",label:"Downforce"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{(profileCategory==="F1"?teamDetails[profileTeam.id]?.[attribute.key]:undefined) ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${teamDetails[profileTeam.id]?.[attribute.key] ?? 0}%`}}/></div></div>)}
               </div>
             </div>
             <div className="panel team-profile-roster">
@@ -442,7 +446,7 @@ export default function Home() {
               <button className={pilotsCategory==="F2"?"selected":""} onClick={()=>{setPilotsCategory("F2");setSearch("");}}>Fórmula 2</button>
               <button className={pilotsCategory==="F3"?"selected":""} onClick={()=>{setPilotsCategory("F3");setSearch("");}}>Fórmula 3</button>
             </div>
-            <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos contratados — {pilotsCategory==="F1"?"Fórmula 1":pilotsCategory==="F2"?"Fórmula 2":"Fórmula 3"}</h2><p>{filteredDrivers.length} pilotos no elenco da próxima temporada</p></div><div className="search-box"><Search size={16}/><input placeholder="Buscar piloto ou equipe..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>Nº</th><th>EQUIPE</th><th>STATUS</th></tr></thead><tbody>{filteredDrivers.map(d=><tr key={d.id}><td>{pilotsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button>:<b>{d.name}</b>}</td><td>{d.country}</td><td>#{d.number}</td><td><span className="team-cell"><i style={{background:(pilotsCategory==="F1"?teams:pilotsCategory==="F2"?f2Teams:f3Teams).find(t=>t.id===d.teamId)?.color}}/>{pilotsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(d.teamId)}>{d.teamLabel}</button>:d.teamLabel}</span></td><td><span className="status-tag">{pilotsCategory==="F1"?(d.status==="Reserva"?"Reserva":"Titular"):"Contratado"}</span></td></tr>)}</tbody></table></div></div>
+            <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos contratados — {pilotsCategory==="F1"?"Fórmula 1":pilotsCategory==="F2"?"Fórmula 2":"Fórmula 3"}</h2><p>{filteredDrivers.length} pilotos no elenco da próxima temporada</p></div><div className="search-box"><Search size={16}/><input placeholder="Buscar piloto ou equipe..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>NACIONALIDADE</th><th>Nº</th><th>EQUIPE</th><th>STATUS</th></tr></thead><tbody>{filteredDrivers.map(d=><tr key={d.id}><td>{pilotsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id,teamsCategory)}>{d.name}</button>:<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id,teamsCategory)}>{d.name}</button>}</td><td>{d.country}</td><td>#{d.number}</td><td><span className="team-cell"><i style={{background:(pilotsCategory==="F1"?teams:pilotsCategory==="F2"?f2Teams:f3Teams).find(t=>t.id===d.teamId)?.color}}/>{pilotsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(d.teamId)}>{d.teamLabel}</button>:d.teamLabel}</span></td><td><span className="status-tag">{pilotsCategory==="F1"?(d.status==="Reserva"?"Reserva":"Titular"):"Contratado"}</span></td></tr>)}</tbody></table></div></div>
           </>}
 
           {!profileDriver && !profileTeam && section==="Equipes" && <>
@@ -456,7 +460,7 @@ export default function Home() {
               const ds=roster.filter(d=>d.teamId===t.id && d.status!=="Transferido" && d.status!=="Aposentado");
               return <div className="panel team-card" key={teamsCategory+"-"+t.id}>
                 <div className="team-card-top"><div className="team-emblem" style={{background:t.color+"18",color:t.color}}>{t.short}</div><span className="seat-count">{ds.length}/2 vagas</span></div>
-                <h3>{teamsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id)}>{t.name}</button>:t.name}</h3>
+                <h3>{teamsCategory==="F1"?<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>:<button type="button" className="driver-name-link team-name-link" onClick={()=>openTeamProfile(t.id,teamsCategory)}>{t.name}</button>}</h3>
                 <div className="driver-pair">{ds.map(d=><div key={d.id}><span>#{d.number}</span>{teamsCategory==="F1"?<button type="button" className="driver-name-link" onClick={()=>openDriverProfile(d.id)}>{d.name}</button>:<b>{d.name}</b>}</div>)}{ds.length===0&&<div className="empty-team-roster">Nenhum piloto contratado</div>}</div>
                 <div className="seat-bar"><i style={{width:`${ds.length*50}%`,background:t.color}}/></div>
               </div>
