@@ -65,6 +65,31 @@ const initialRaces: Race[] = [
   {id:14,round:14,name:"GP de Abu Dhabi",circuit:"Yas Marina Circuit",date:"04–06 dez 2026",status:"Programada"},
 ];
 
+const driverDetails: Record<string, { age: number; attributes: { racePace: number; qualifying: number; overtaking: number; defending: number; consistency: number } }> = {
+  "Rafael Câmara": { age:21, attributes:{racePace:84,qualifying:83,overtaking:80,defending:78,consistency:81} },
+  "Joshua Dürksen": { age:22, attributes:{racePace:78,qualifying:75,overtaking:81,defending:79,consistency:74} },
+  "Ritomo Miyata": { age:27, attributes:{racePace:78,qualifying:76,overtaking:74,defending:77,consistency:79} },
+  "Colton Herta": { age:26, attributes:{racePace:82,qualifying:83,overtaking:84,defending:78,consistency:75} },
+  "Noel León": { age:21, attributes:{racePace:77,qualifying:76,overtaking:78,defending:75,consistency:73} },
+  "Nikola Tsolov": { age:19, attributes:{racePace:83,qualifying:81,overtaking:82,defending:77,consistency:78} },
+  "Dino Beganovic": { age:22, attributes:{racePace:80,qualifying:79,overtaking:77,defending:78,consistency:79} },
+  "Roman Bilinski": { age:22, attributes:{racePace:72,qualifying:70,overtaking:73,defending:72,consistency:68} },
+  "Gabriele Minì": { age:21, attributes:{racePace:82,qualifying:84,overtaking:79,defending:77,consistency:78} },
+  "Oliver Goethe": { age:22, attributes:{racePace:77,qualifying:78,overtaking:76,defending:73,consistency:75} },
+  "Sebastián Montoya": { age:21, attributes:{racePace:75,qualifying:77,overtaking:76,defending:72,consistency:70} },
+  "Mari Boya": { age:22, attributes:{racePace:73,qualifying:74,overtaking:72,defending:75,consistency:73} },
+  "Martinius Stenshorne": { age:20, attributes:{racePace:82,qualifying:80,overtaking:81,defending:76,consistency:77} },
+  "Alexander Dunne": { age:21, attributes:{racePace:83,qualifying:82,overtaking:84,defending:81,consistency:76} },
+  "Kush Maini": { age:26, attributes:{racePace:78,qualifying:76,overtaking:77,defending:80,consistency:78} },
+  "Tasanapol Inthraphuvasak": { age:20, attributes:{racePace:72,qualifying:71,overtaking:74,defending:70,consistency:68} },
+  "Emerson Fittipaldi": { age:19, attributes:{racePace:68,qualifying:70,overtaking:69,defending:67,consistency:65} },
+  "Cian Shields": { age:21, attributes:{racePace:65,qualifying:66,overtaking:68,defending:65,consistency:63} },
+  "Hiyu Yamakoshi": { age:20, attributes:{racePace:67,qualifying:68,overtaking:69,defending:65,consistency:64} },
+  "Rafael Villagómez": { age:25, attributes:{racePace:70,qualifying:68,overtaking:72,defending:69,consistency:67} },
+  "Laurens van Hoepen": { age:21, attributes:{racePace:78,qualifying:77,overtaking:79,defending:75,consistency:76} },
+  "John Bennett": { age:23, attributes:{racePace:69,qualifying:68,overtaking:70,defending:67,consistency:65} },
+};
+
 const sprintPoints = [10,8,6,5,4,3,2,1];
 const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
@@ -76,8 +101,11 @@ export default function Formula2Championship() {
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
   const [draft,setDraft] = useState<Record<string,{position:string;status:string}>>({});
   const [notice,setNotice] = useState("");
+  const [profileDriverId,setProfileDriverId] = useState<string | null>(null);
 
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Equipe não encontrada";
+  const profileDriver=drivers.find(d=>d.id===profileDriverId);
+  const profileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>drivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
@@ -112,6 +140,25 @@ export default function Formula2Championship() {
 
   return <div className="championship-module">
     {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
+    {profileDriver ? <div className="driver-profile-page">
+      <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
+      <div className="panel driver-profile-hero">
+        <div className="driver-profile-number">#{profileDriver.number}</div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · {teamName(profileDriver.teamId)} · Temporada 2026</p></div>
+        <span className="status-tag">EM DESENVOLVIMENTO</span>
+      </div>
+      <div className="driver-facts-grid">
+        <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
+        <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
+        <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b>{teamName(profileDriver.teamId)}</b></div>
+      </div>
+      <div className="panel driver-attributes-panel">
+        <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desenvolvimento · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
+        <div className="driver-attributes-list">
+          {([{key:"racePace",label:"Race Pace"},{key:"qualifying",label:"Qualifying"},{key:"overtaking",label:"Overtaking"},{key:"defending",label:"Defending"},{key:"consistency",label:"Consistency"}] as const).map(attribute => <div className="driver-attribute-row" key={attribute.key}><div><b>{attribute.label}</b><strong>{profileDetails?.attributes[attribute.key] ?? 0}</strong></div><div className="driver-attribute-track"><i style={{width:`${profileDetails?.attributes[attribute.key] ?? 0}%`}}/></div></div>)}
+        </div>
+      </div>
+    </div> : <>
     <div className="champ-hero panel"><div className="champ-hero-icon"><Trophy size={23}/></div><div className="champ-hero-copy"><span className="eyebrow">CAMPEONATO ATIVO</span><h2>FIA Formula 2 Championship</h2><p>Temporada 2026 · Fórmula 2 · Corrida Sprint e Feature</p></div><div className="champ-progress"><b>{String(completed).padStart(2,"0")} <span>/ {String(races.length).padStart(2,"0")}</span></b><small>ETAPAS COM RESULTADO</small></div></div>
     <div className="champ-tabs">
       <button className={tab==="classificacao"?"selected":""} onClick={()=>setTab("classificacao")}><Trophy size={15}/> Classificação</button>
@@ -119,7 +166,7 @@ export default function Formula2Championship() {
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="champ-standings-grid">
-      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada nas corridas Sprint e Feature</p></div><span className="status-tag">22 PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><b>{d.name}</b></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/>{teamName(d.teamId)}</span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
+      <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de pilotos</h2><p>Pontuação acumulada nas corridas Sprint e Feature</p></div><span className="status-tag">22 PILOTOS</span></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>VITÓRIAS</th><th>PÓDIOS</th><th>PTS</th></tr></thead><tbody>{standings.map((d,i)=><tr key={d.id}><td><b className="champ-position">{String(i+1).padStart(2,"0")}</b></td><td><button type="button" className="driver-name-link" onClick={()=>setProfileDriverId(d.id)}>{d.name}</button></td><td><span className="team-cell"><i style={{background:teamColor(d.teamId)}}/>{teamName(d.teamId)}</span></td><td>{d.wins}</td><td>{d.podiums}</td><td><b className="champ-points">{d.points}</b></td></tr>)}</tbody></table></div></div>
       <div className="panel table-panel"><div className="panel-head"><div><h2>Campeonato de equipes</h2><p>Soma dos pontos dos dois pilotos</p></div><span className="status-tag">11 EQUIPES</span></div><div className="constructor-list">{teamStandings.map((t,i)=><div className="constructor-row" key={t.id}><b className="champ-position">{String(i+1).padStart(2,"0")}</b><i style={{background:t.color}}/><span>{t.name}</span><strong>{t.points} <small>PTS</small></strong></div>)}</div></div>
     </div>}
     {tab==="calendario"&&<div className="panel table-panel"><div className="panel-head"><div><h2>Calendário da temporada</h2><p>14 etapas · 28 corridas · Sprint e Feature</p></div></div><div className="table-wrap"><table><thead><tr><th>RODADA</th><th>ETAPA</th><th>CIRCUITO</th><th>DATA</th><th>STATUS</th></tr></thead><tbody>{races.slice().sort((a,b)=>a.round-b.round).map(r=><tr key={r.id}><td><b>R{String(r.round).padStart(2,"0")}</b></td><td><b>{r.name}</b></td><td>{r.circuit}</td><td>{r.date}</td><td><span className={r.status==="Concluída"?"status-tag":"race-pending"}>{r.status}</span></td></tr>)}</tbody></table></div></div>}
@@ -134,5 +181,6 @@ export default function Formula2Championship() {
       <div className="panel table-panel result-recorded-panel"><div className="panel-head"><div><h2>Resultados da corrida selecionada</h2><p>{selectedRace?.name} · {session==="Sprint"?"Sprint Race":"Feature Race"}</p></div></div><div className="table-wrap"><table><thead><tr><th>POS.</th><th>PILOTO</th><th>EQUIPE</th><th>SITUAÇÃO</th><th>PTS</th></tr></thead><tbody>{sessionResults.length===0?<tr><td colSpan={5} className="empty-state">Nenhum resultado registrado para esta corrida.</td></tr>:sessionResults.slice().sort((a,b)=>(a.position??99)-(b.position??99)).map(r=><tr key={r.id}><td><b className="champ-position">{r.position?r.position+"º":"—"}</b></td><td><b>{drivers.find(d=>d.id===r.driverId)?.name??"Piloto removido"}</b></td><td>{teamName(drivers.find(d=>d.id===r.driverId)?.teamId??"")}</td><td>{r.status}</td><td><b className="champ-points">{r.points}</b></td></tr>)}</tbody></table></div></div>
     </div>}
     <div className="champ-footnote"><Medal size={14}/> Pontuação padrão: Sprint 10–8–6–5–4–3–2–1 · Feature 25–18–15–12–10–8–6–4–2–1. Resultados inseridos manualmente para sua simulação.</div>
+  </div>    </>}
   </div>;
 }
