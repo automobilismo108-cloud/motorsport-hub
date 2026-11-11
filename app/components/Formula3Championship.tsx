@@ -152,7 +152,7 @@ export default function Formula2Championship() {
     setLicenseAwards(old=>[...old.filter(a=>!(a.category==="F3"&&a.season===2026)),...awards]);
     setNotice("Classificação final da Fórmula 3 2026 confirmada. Pontos registrados uma única vez.");
   };
-  const profileLicensePoints=licenseAwards.filter(a=>a.driverId===profileDriver?.id&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
+  const profileLicensePoints=licenseAwards.filter(a=>a.driverName.trim().toLocaleLowerCase("pt-BR")===profileDriver?.name.trim().toLocaleLowerCase("pt-BR")&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
   const profileLicenseEligible=profileLicensePoints>=40;
 
   const saveResults=()=>{
@@ -181,7 +181,7 @@ export default function Formula2Championship() {
       <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number" style={{color:profileTeam.color}}>F3</div>
-        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 3</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>
         <span className="status-tag">EQUIPE F3</span>
       </div>
       <div className="driver-facts-grid">
@@ -200,7 +200,7 @@ export default function Formula2Championship() {
       <button className="champ-back-button" onClick={()=>setProfileDriverId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number">#{profileDriver.number}</div>
-        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 2</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · <button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button> · Temporada 2026</p></div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DO PILOTO · FÓRMULA 3</span><h2>{profileDriver.name}</h2><p>{profileDriver.country} · <button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button> · Temporada 2026</p></div>
         <span className="status-tag">EM DESENVOLVIMENTO</span>
       </div>
       <div className="driver-facts-grid">
