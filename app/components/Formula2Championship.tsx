@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAuth } from "@/app/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, buildSuperLicenseAwards, getSuperLicensePoints, getSuperLicenseWindow, normalizeLicenseAwards, type SuperLicenseAward } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
 
@@ -103,9 +106,10 @@ const featurePoints = [25,18,15,12,10,8,6,4,2,1];
 
 export default function Formula2Championship() {
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
-  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>("championship:f2:2026:races",initialRaces);
-  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>("championship:f2:2026:results",[]);
+  const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:races`,initialRaces);
+  const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:${category.toLowerCase()}:${ACTIVE_SEASON}:results`,[]);
   const [licenseAwards,setLicenseAwards,licenseReady,licenseError] = useCloudState<SuperLicenseAward[]>("superlicense:awards",[]);
+  const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
   const [draft,setDraft] = useState<Record<string,{position:string;status:string}>>({});
@@ -129,20 +133,32 @@ export default function Formula2Championship() {
   const remaining=drivers.filter(d=>!sessionResults.some(r=>r.driverId===d.id));
   const filled=remaining.filter(d=>draft[d.id]&&(draft[d.id].position!==""||draft[d.id].status!=="Classificado")).length;
   const completed=races.filter(r=>results.some(x=>x.raceId===r.id)).length;
-  const seasonAlreadyFinalized=licenseAwards.some(a=>a.category==="F2"&&a.season===2026);
-  const seasonComplete=races.length>0&&races.every(r=>(["Sprint","Feature"] as const).every(kind=>drivers.every(d=>results.some(x=>x.raceId===r.id&&x.session===kind&&x.driverId===d.id))));
-  const finalizeSeason=()=>{
-    if(!licenseReady){setNotice("Aguarde a sincronização da Superlicença.");return;}
-    if(seasonAlreadyFinalized){setNotice("Esta temporada já foi finalizada; os pontos não serão duplicados.");return;}
-    if(!seasonComplete){setNotice("Registre todos os pilotos em Sprint e Feature de todas as etapas antes de finalizar.");return;}
-    const finalTable=drivers.map(d=>({...d,total:results.filter(x=>x.driverId===d.id).reduce((sum,x)=>sum+x.points,0)})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
-    const pointsByPosition=[40,35,30,25,20,15,10,8,6,4];
-    const awards:SuperLicenseAward[]=finalTable.slice(0,10).map((d,index)=>({id:"F2-2026-"+d.id,driverId:d.id,driverName:d.name,category:"F2",season:2026,position:index+1,points:pointsByPosition[index]}));
-    setLicenseAwards(old=>[...old.filter(a=>!(a.category==="F2"&&a.season===2026)),...awards]);
-    setNotice("Classificação final da Fórmula 2 2026 confirmada. Pontos registrados uma única vez.");
+  const normalizedLicenseAwards = normalizeLicenseAwards(licenseAwards);
+  const licenseWindow = getSuperLicenseWindow();
+  const seasonAlreadyFinalized = normalizedLicenseAwards.some(a => a.category === "F2" && a.season === ACTIVE_SEASON);
+  const seasonComplete = races.length > 0 && races.every(r =>
+    (["Sprint", "Feature"] as const).every(kind =>
+      drivers.every(d => results.some(x => x.raceId === r.id && x.session === kind && x.driverId === d.id))
+    )
+  );
+  const finalizeSeason = async () => {
+    if (!licenseReady) { setNotice("Aguarde a sincronização da Superlicença."); return; }
+    if (seasonAlreadyFinalized) { setNotice("Esta temporada já foi finalizada; os pontos não serão duplicados."); return; }
+    if (!seasonComplete) { setNotice("Registre todos os pilotos em Sprint e Feature de todas as etapas antes de finalizar."); return; }
+    if (!user || !supabase) { setNotice("Não foi possível confirmar sua sessão para salvar a Superlicença."); return; }
+    const awards = buildSuperLicenseAwards("F2", ACTIVE_SEASON, drivers, results);
+    if (!awards.length) { setNotice("Não foi possível gerar a classificação final."); return; }
+    const nextAwards = [...normalizedLicenseAwards.filter(a => !(a.category === "F2" && a.season === ACTIVE_SEASON)), ...awards];
+    const { error } = await supabase.from("workspace_data").upsert(
+      { user_id: user.id, data_key: "superlicense:awards", payload: nextAwards },
+      { onConflict: "user_id,data_key" }
+    );
+    if (error) { setNotice("Falha ao salvar a Superlicença: " + error.message); return; }
+    setLicenseAwards(nextAwards);
+    setNotice("Classificação final da Fórmula 2 " + ACTIVE_SEASON + " confirmada. Pontos salvos na nuvem.");
   };
-  const profileLicensePoints=licenseAwards.filter(a=>a.driverName.trim().toLocaleLowerCase("pt-BR")===profileDriver?.name.trim().toLocaleLowerCase("pt-BR")&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
-  const profileLicenseEligible=profileLicensePoints>=40;
+  const profileLicensePoints = getSuperLicensePoints(normalizedLicenseAwards, profileDriver?.licenseId);
+  const profileLicenseEligible = profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
 
   const saveResults=()=>{
     const used=new Set<number>();
@@ -170,7 +186,7 @@ export default function Formula2Championship() {
       <button className="champ-back-button" onClick={()=>setProfileTeamId(null)}><Flag size={15}/> Voltar ao campeonato</button>
       <div className="panel driver-profile-hero">
         <div className="driver-profile-number" style={{color:profileTeam.color}}>F2</div>
-        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada 2026</p></div>
+        <div className="driver-profile-heading"><span className="eyebrow">FICHA DA EQUIPE · FÓRMULA 2</span><h2>{profileTeam.name}</h2><p>{profileTeam.headquarters} · Temporada {ACTIVE_SEASON}</p></div>
         <span className="status-tag">EQUIPE F2</span>
       </div>
       <div className="driver-facts-grid">
@@ -198,7 +214,7 @@ export default function Formula2Championship() {
         <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
       </div>
       <div className="panel driver-attributes-panel">
-        <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos acumulados nas últimas três temporadas (2024–2026)</p></div><span className="status-tag">{profileLicenseEligible?"LICENCIADO":"EM FORMAÇÃO"}</span></div>
+        <div className="panel-head"><div><h2>Superlicença FIA</h2><p>Pontos acumulados nas últimas três temporadas ({licenseWindow.join("–")})</p></div><span className="status-tag">{profileLicenseEligible?"LICENCIADO":"EM FORMAÇÃO"}</span></div>
         <div className="driver-facts-grid">
           <div className="panel driver-fact"><span>PONTOS</span><b>{profileLicensePoints} / 40</b></div>
           <div className="panel driver-fact"><span>STATUS</span><b>{profileLicenseEligible?"Requisito atingido":"Ainda não elegível"}</b></div>
@@ -212,14 +228,14 @@ export default function Formula2Championship() {
         </div>
       </div>
     </div> : <>
-    <div className="champ-hero panel"><div className="champ-hero-icon"><Trophy size={23}/></div><div className="champ-hero-copy"><span className="eyebrow">CAMPEONATO ATIVO</span><h2>FIA Formula 2 Championship</h2><p>Temporada 2026 · Fórmula 2 · Corrida Sprint e Feature</p></div><div className="champ-progress"><b>{String(completed).padStart(2,"0")} <span>/ {String(races.length).padStart(2,"0")}</span></b><small>ETAPAS COM RESULTADO</small></div></div>
+    <div className="champ-hero panel"><div className="champ-hero-icon"><Trophy size={23}/></div><div className="champ-hero-copy"><span className="eyebrow">CAMPEONATO ATIVO</span><h2>FIA Formula 2 Championship</h2><p>Temporada {ACTIVE_SEASON} · Fórmula 2 · Corrida Sprint e Feature</p></div><div className="champ-progress"><b>{String(completed).padStart(2,"0")} <span>/ {String(races.length).padStart(2,"0")}</span></b><small>ETAPAS COM RESULTADO</small></div></div>
     <div className="champ-tabs">
       <button className={tab==="classificacao"?"selected":""} onClick={()=>setTab("classificacao")}><Trophy size={15}/> Classificação</button>
       <button className={tab==="calendario"?"selected":""} onClick={()=>setTab("calendario")}><CalendarDays size={15}/> Calendário</button>
       <button className={tab==="resultados"?"selected":""} onClick={()=>setTab("resultados")}><ClipboardList size={15}/> Resultados</button>
     </div>
     {tab==="classificacao"&&<div className="panel table-panel" style={{marginBottom:16,padding:20}}>
-      <div className="panel-head"><div><h2>Superlicença FIA · Temporada 2026</h2><p>Fórmula 2: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
+      <div className="panel-head"><div><h2>Superlicença FIA · Temporada {ACTIVE_SEASON}</h2><p>Fórmula 2: pontos para os 10 primeiros após a confirmação da classificação final.</p></div><span className="status-tag">{seasonAlreadyFinalized?"FINALIZADA":seasonComplete?"PRONTA PARA FINALIZAR":"EM ANDAMENTO"}</span></div>
       <div className="result-bulk-footer"><span>{seasonAlreadyFinalized?"Pontos já registrados.":seasonComplete?"Todos os resultados foram preenchidos. Confirme para creditar os pontos.":"Complete Sprint e Feature de todas as etapas para habilitar a confirmação."}</span><button className="primary-button" disabled={!seasonComplete||seasonAlreadyFinalized||!licenseReady||!!licenseError} onClick={finalizeSeason}><Check size={16}/> Confirmar classificação final</button></div>
       {licenseError&&<p className="empty-state">Não foi possível sincronizar a Superlicença.</p>}
     </div>}
