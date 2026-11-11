@@ -67,10 +67,10 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const driverName=(id:string)=>drivers.find(d=>d.id===id)?.name??"Piloto removido";
   const teamName=(id:string)=>teams.find(t=>t.id===id)?.name??"Sem equipe";
   const teamColor=(id:string)=>teams.find(t=>t.id===id)?.color??"#8491a2";
-  const standings=useMemo(()=>drivers.map(d=>{
+  const standings=useMemo(()=>eligibleDrivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
     return { ...d, points:rows.reduce((sum,r)=>sum+r.points,0), wins:rows.filter(r=>r.position===1).length, podiums:rows.filter(r=>r.position!==null&&r.position<=3).length, starts:rows.length };
-  }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums),[drivers,results]);
+  }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums),[eligibleDrivers,results]);
   const teamStandings=useMemo(()=>teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((s,d)=>s+d.points,0)})).sort((a,b)=>b.points-a.points),[teams,standings]);
   const completedRaces=races.filter(r=>r.status==="Concluída").length;
   const seasonComplete = races.length > 0 && races.every(r => eligibleDrivers.every(d => results.some(result => result.raceId === r.id && result.driverId === d.id)));
