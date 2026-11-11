@@ -37,7 +37,7 @@ export function evolveDriverSeason(
   const next = { ...state };
   ranked.forEach(({ driver }, index) => {
     const key = driver.licenseId || driver.id;
-    const base = baseDetails[driver.name];
+    const base = baseDetails[driver.name] ?? (next[key] ? { age: next[key].age, attributes: next[key].attributes } : undefined);
     if (!base) return;
     const current = getDriverDevelopment(next, key, base, season);
     if (current.history.some(item => item.season === season)) return;
