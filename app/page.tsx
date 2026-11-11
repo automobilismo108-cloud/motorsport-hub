@@ -170,7 +170,7 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError || licenseError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError}</div>;
+  if (driversError || movesError || licenseError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError || licenseError || developmentError}</div>;
   if (!driversReady || !movesReady || !licenseReady || !developmentReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
