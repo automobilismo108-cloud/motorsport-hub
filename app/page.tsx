@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useCloudState } from "@/lib/useCloudState";
 import Championship from "./components/Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront,
@@ -89,9 +90,9 @@ const initialMoves: Move[] = [
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
-  const [drivers, setDrivers] = useState(initialDrivers);
+  const [drivers, setDrivers] = useCloudState<Driver[]>("workspace:drivers", initialDrivers, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
-  const [moves, setMoves] = useState(initialMoves);
+  const [moves, setMoves] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
@@ -99,25 +100,7 @@ export default function Home() {
   const [destination, setDestination] = useState("");
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [storageReady, setStorageReady] = useState(false);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("motorsport-hub:workspace:v1");
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (Array.isArray(data.drivers)) setDrivers(data.drivers.map((saved: Partial<Driver> & { id: string }) => { const base = initialDrivers.find(d => d.id === saved.id); return base ? { ...base, ...saved, attributes: { ...base.attributes, ...(saved.attributes ?? {}) } } : saved as Driver; }));
-        if (Array.isArray(data.moves)) setMoves(data.moves);
-      }
-    } catch (error) { console.error("Não foi possível carregar os dados salvos.", error); }
-    setStorageReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!storageReady) return;
-    try { localStorage.setItem("motorsport-hub:workspace:v1", JSON.stringify({ drivers, moves })); }
-    catch (error) { console.error("Não foi possível salvar os dados.", error); }
-  }, [drivers, moves, storageReady]);
 
   const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
   const openDriverProfile = (id: string) => setProfileDriverId(id);
