@@ -177,7 +177,7 @@ export default function Formula2Championship({development,setDevelopment}:{devel
   const profileLicenseEligible = profileLicensePoints >= REQUIRED_SUPER_LICENSE_POINTS;
 
   const saveResults=()=>{
-    const used=new Set<number>();
+    const used=new Set<number>(sessionResults.filter(r=>r.position!==null).map(r=>r.position as number));
     const entries=remaining.filter(d=>draft[d.id]&&(draft[d.id].position!==""||draft[d.id].status!=="Classificado"));
     if(!entries.length){setNotice("Preencha a posição ou a situação de pelo menos um piloto.");return;}
     for(const d of entries){const p=draft[d.id].position===""?null:Number(draft[d.id].position);if(p!==null&&used.has(p)){setNotice("Há posições repetidas. Cada posição deve ser única.");return;}if(p!==null)used.add(p);}
