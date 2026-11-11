@@ -142,7 +142,7 @@ function generateRandomFreeAgents(existing:TransferDriver[]) {
     };
     const age=16+Math.floor(Math.random()*9);
     const potential=Math.min(99,base+10+Math.floor(Math.random()*16));
-    drivers.push({id:"free-generated-"+licenseId.split(":")[2],licenseId,name,country:pick(ACADEMY_COUNTRIES),number,teamId:"",status:"Ativo",isFictional:true});
+    drivers.push({id:"free-generated-"+licenseId.replace(/[^a-zA-Z0-9_-]/g,"-"),licenseId,name,country:pick(ACADEMY_COUNTRIES),number,teamId:"",status:"Ativo",isFictional:true});
     development[licenseId]={age,potential,attributes,history:[]};
     usedNames.add(name);usedNumbers.add(number);
   }
