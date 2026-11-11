@@ -13,6 +13,7 @@ export type TransferDriver = {
   teamId: string;
   status?: "Titular" | "Reserva" | "Ativo" | "Transferido" | "Aposentado";
   isFictional?: boolean;
+  category?: "F2" | "F3";
 };
 
 export type TransferMove = {
@@ -29,6 +30,7 @@ export type TransferMarketState = {
   f1: TransferDriver[];
   f2: TransferDriver[];
   f3: TransferDriver[];
+  freeAgents: TransferDriver[];
   moves: TransferMove[];
 };
 
@@ -74,6 +76,7 @@ export function useTransferMarketState(initial: TransferMarketState): [
             f1: safeArray(saved.f1, initial.f1),
             f2: safeArray(saved.f2, initial.f2),
             f3: safeArray(saved.f3, initial.f3),
+            freeAgents: safeArray(saved.freeAgents, initial.freeAgents),
             moves: safeArray(saved.moves, initial.moves),
           });
         } else {
@@ -95,6 +98,7 @@ export function useTransferMarketState(initial: TransferMarketState): [
             f1: safeArray(byKey.get("workspace:drivers") ?? local?.drivers, initial.f1),
             f2: safeArray(byKey.get("workspace:f2:drivers"), initial.f2),
             f3: safeArray(byKey.get("workspace:f3:drivers"), initial.f3),
+            freeAgents: initial.freeAgents,
             moves: safeArray(byKey.get("workspace:moves") ?? local?.moves, initial.moves),
           };
           const { error: saveError } = await supabase!
