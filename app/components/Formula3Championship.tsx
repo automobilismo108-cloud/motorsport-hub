@@ -158,6 +158,11 @@ export default function Formula2Championship() {
     if (!user || !supabase) { setNotice("Não foi possível confirmar sua sessão para salvar a Superlicença."); return; }
     const awards = buildSuperLicenseAwards("F3", ACTIVE_SEASON, drivers, results);
     if (!awards.length) { setNotice("Não foi possível gerar a classificação final."); return; }
+    const { error: resultsSaveError } = await supabase.from("workspace_data").upsert(
+      { user_id: user.id, data_key: `championship:f3:${ACTIVE_SEASON}:results`, payload: results },
+      { onConflict: "user_id,data_key" }
+    );
+    if (resultsSaveError) { setNotice("Não foi possível salvar os resultados antes da Superlicença: " + resultsSaveError.message); return; }
     const nextAwards = [...normalizedLicenseAwards.filter(a => !(a.category === "F3" && a.season === ACTIVE_SEASON)), ...awards];
     const { error } = await supabase.from("workspace_data").upsert(
       { user_id: user.id, data_key: "superlicense:awards", payload: nextAwards },
