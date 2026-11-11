@@ -52,7 +52,7 @@ const driverDetails: Record<string, Omit<Driver, "id" | "name" | "country" | "nu
   "Valtteri Bottas": { age:37, contractUntil:2027, attributes:{racePace:89,qualifying:92,overtaking:86,defending:89,consistency:93} },
 };
 
-const initialDrivers: Driver[] = [
+const initialDriversSeed = [
   {id:"d1",name:"Lando Norris",country:"Reino Unido",number:1,teamId:"mcl",status:"Titular"},
   {id:"d2",name:"Oscar Piastri",country:"Austrália",number:81,teamId:"mcl",status:"Titular"},
   {id:"d3",name:"George Russell",country:"Reino Unido",number:63,teamId:"mer",status:"Titular"},
@@ -75,7 +75,29 @@ const initialDrivers: Driver[] = [
   {id:"d20",name:"Franco Colapinto",country:"Argentina",number:43,teamId:"alp",status:"Titular"},
   {id:"d21",name:"Sergio Pérez",country:"México",number:11,teamId:"cad",status:"Titular"},
   {id:"d22",name:"Valtteri Bottas",country:"Finlândia",number:77,teamId:"cad",status:"Titular"},
-].map(driver => ({ ...driver, ...driverDetails[driver.name] }));
+].map(driver => ({ ...driver, ...driverDetails[driver.name] })) as Driver[];
+
+// Reaplica os dados-base aos pilotos carregados, sem sobrescrever equipe,
+ // número, status ou outros campos que o usuário já tenha alterado.
+const normalizeDrivers = (saved: any): Driver[] => {
+  if (!Array.isArray(saved)) return initialDriversSeed;
+  return saved.map((item: any) => {
+    const base = initialDriversSeed.find(d => d.id === item?.id || d.name === item?.name);
+    if (!base) return item as Driver;
+    return {
+      ...base,
+      ...item,
+      age: item?.age ?? base.age,
+      contractUntil: item?.contractUntil ?? base.contractUntil,
+      attributes: { ...base.attributes, ...(item?.attributes ?? {}) },
+    } as Driver;
+  });
+};
+const migrateDrivers = (legacy: any): Driver[] | undefined =>
+  Array.isArray(legacy?.drivers) ? normalizeDrivers(legacy.drivers) : undefined;
+const migrateMoves = (legacy: any): Move[] | undefined =>
+  Array.isArray(legacy?.moves) ? legacy.moves : undefined;
+
 
 const registeredChampionships = [
   { id:"f1", name:"FIA Formula One World Championship", category:"Fórmula 1", season:"2026", organizer:"FIA", description:"Classificação de pilotos e construtores, calendário e resultados da temporada.", status:"Em andamento", rounds:24 },
@@ -90,7 +112,7 @@ const initialMoves: Move[] = [
 export default function Home() {
   const [section, setSection] = useState("Visão geral");
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
-  const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDrivers, "motorsport-hub:workspace:v1", migrateDrivers);
+  const [drivers, setDrivers, driversReady, driversError] = useCloudState<Driver[]>("workspace:drivers", initialDriversSeed, "motorsport-hub:workspace:v1", migrateDrivers);
   const [teams] = useState(initialTeams);
   const [moves, setMoves, movesReady, movesError] = useCloudState<Move[]>("workspace:moves", initialMoves, "motorsport-hub:workspace:v1", migrateMoves);
   const [search, setSearch] = useState("");
@@ -104,6 +126,14 @@ export default function Home() {
 
   const teamName = (id: string) => teams.find(t => t.id === id)?.name ?? "Sem equipe";
   const openDriverProfile = (id: string) => setProfileDriverId(id);
+  useEffect(() => {
+    if (!driversReady) return;
+    setDrivers(current => {
+      const normalized = normalizeDrivers(current);
+      const changed = normalized.some((d, i) => JSON.stringify(d) !== JSON.stringify(current[i])) || normalized.length !== current.length;
+      return changed ? normalized : current;
+    });
+  }, [driversReady, setDrivers]);
   const profileDriver = drivers.find(d => d.id === profileDriverId);
   const filteredDrivers = useMemo(() => drivers.filter(d =>
     `${d.name} ${teamName(d.teamId)} ${d.country}`.toLowerCase().includes(search.toLowerCase())
