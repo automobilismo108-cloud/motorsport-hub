@@ -161,7 +161,8 @@ export default function Home() {
     {label:"Mercado",icon:ArrowLeftRight},
   ];
 
-  if (driversError || movesError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError}</div>;\n  if (!driversReady || !movesReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
+  if (driversError || movesError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{driversError || movesError}</div>;
+  if (!driversReady || !movesReady) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#080d16",color:"#dce5f2"}}>Sincronizando seus dados com segurança...</div>;
 
   return (
     <main className="shell">
