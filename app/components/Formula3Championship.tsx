@@ -3,7 +3,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useAuth } from "@/app/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { ACTIVE_SEASON } from "@/lib/superLicense";
+import { ACTIVE_SEASON, getSuperLicensePoints, normalizeLicenseAwards } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
@@ -119,6 +119,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f3:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f3:${ACTIVE_SEASON}:results`,[]);
+  const [licenseAwardsRaw] = useCloudState<unknown>("superlicense:season-awards", []);
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
   const [session,setSession] = useState<"Sprint"|"Feature">("Sprint");
@@ -135,6 +136,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
   const baseProfileDetails=profileDriver ? driverDetails[profileDriver.name] : undefined;
   const profileDevelopment=profileDriver ? (development[profileDriver.licenseId] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
   const profileDetails=profileDevelopment ? { age: profileDevelopment.age, attributes: profileDevelopment.attributes } : baseProfileDetails;
+  const profileLicensePoints=profileDriver ? getSuperLicensePoints(normalizeLicenseAwards(licenseAwardsRaw),profileDriver.licenseId) : 0;
   const teamColor=(id:string)=>f3Teams.find(t=>t.id===id)?.color??"#8491a2";
   const standings=useMemo(()=>activeDrivers.map(d=>{
     const rows=results.filter(r=>r.driverId===d.id);
@@ -218,6 +220,7 @@ export default function Formula3Championship({development,setDevelopment,drivers
         <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
         <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
         <div className="panel driver-fact"><span>EQUIPE ATUAL</span><b><button type="button" className="driver-name-link" onClick={()=>{setProfileDriverId(null);setProfileTeamId(profileDriver.teamId);}}>{teamName(profileDriver.teamId)}</button></b></div>
+        <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>{profileLicensePoints >= 40 ? "COMPLETO" : `${profileLicensePoints} / 40 PTS`}</b></div>
       </div>
       <div className="panel driver-attributes-panel">
         <div className="panel-head"><div><h2>Atributos do piloto</h2><p>Avaliação de desenvolvimento · escala de 0 a 100</p></div><span className="status-tag">AVALIAÇÃO 0–100</span></div>
