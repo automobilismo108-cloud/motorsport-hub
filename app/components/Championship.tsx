@@ -74,7 +74,7 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const teamStandings=useMemo(()=>teams.map(t=>({...t,points:standings.filter(d=>d.teamId===t.id).reduce((s,d)=>s+d.points,0)})).sort((a,b)=>b.points-a.points),[teams,standings]);
   const completedRaces=races.filter(r=>r.status==="Concluída").length;
   const seasonComplete = races.length > 0 && races.every(r => eligibleDrivers.every(d => results.some(result => result.raceId === r.id && result.driverId === d.id)));
-  const seasonAlreadyFinalized = eligibleDrivers.length > 0 && eligibleDrivers.every(d => (development[d.licenseId || d.id]?.history ?? []).some(item => item.category === "F1" && item.season === ACTIVE_SEASON));
+  const seasonAlreadyFinalized = eligibleDrivers.length > 0 && eligibleDrivers.every(d => (development[d.licenseId || d.id]?.history ?? []).some(item => item.season === ACTIVE_SEASON));
   const finalizeSeason = () => {
     if (!seasonComplete) { setNotice("Registre todos os pilotos elegíveis em todas as etapas antes de finalizar a temporada."); return; }
     if (seasonAlreadyFinalized) { setNotice("A evolução desta temporada já foi aplicada e não será duplicada."); return; }
