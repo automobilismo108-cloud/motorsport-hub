@@ -141,7 +141,7 @@ export default function Formula2Championship() {
     setLicenseAwards(old=>[...old.filter(a=>!(a.category==="F2"&&a.season===2026)),...awards]);
     setNotice("Classificação final da Fórmula 2 2026 confirmada. Pontos registrados uma única vez.");
   };
-  const profileLicensePoints=licenseAwards.filter(a=>a.driverId===profileDriver?.id&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
+  const profileLicensePoints=licenseAwards.filter(a=>a.driverName.trim().toLocaleLowerCase("pt-BR")===profileDriver?.name.trim().toLocaleLowerCase("pt-BR")&&a.season>=2024&&a.season<=2026).reduce((sum,a)=>sum+a.points,0);
   const profileLicenseEligible=profileLicensePoints>=40;
 
   const saveResults=()=>{
