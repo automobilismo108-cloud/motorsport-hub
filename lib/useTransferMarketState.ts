@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 export type TransferDriver = {
   id: string;
-  licenseId: string;
+  licenseId?: string;
   name: string;
   country: string;
   number: number;
@@ -15,13 +15,13 @@ export type TransferDriver = {
 };
 
 export type TransferMove = {
-  id: string;
+  id: string | number;
   driver: string;
   from: string;
   to: string;
   date: string;
-  status: "Concluída";
-  category: string;
+  status: string;
+  category?: string;
 };
 
 export type TransferMarketState = {
