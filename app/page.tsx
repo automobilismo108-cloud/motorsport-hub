@@ -7,11 +7,12 @@ import { useTransferMarketState, type TransferDriver } from "@/lib/useTransferMa
 import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import Championship from "./components/Championship";
 import SeasonHistory from "./components/SeasonHistory";
+import PaddockNews from "./components/PaddockNews";
 import Formula2Championship, { initialF2Drivers, f2Teams, driverDetails as f2DriverDetails, teamDetails as f2TeamDetails, type Driver as F2Driver } from "./components/Formula2Championship";
 import Formula3Championship, { initialF3Drivers, f3Teams, driverDetails as f3DriverDetails, teamDetails as f3TeamDetails, type Driver as F3Driver } from "./components/Formula3Championship";
 import {
   Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront, History,
-  ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu,
+  ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu, Newspaper,
   Plus, Search, Settings, Shield, Trophy, Users, X, Check, Zap
 } from "lucide-react";
 
@@ -395,6 +396,7 @@ export default function Home() {
     {label:"Equipes",icon:Shield},
     {label:"Mercado",icon:ArrowLeftRight},
     {label:"Histórico",icon:History},
+    {label:"Paddock News",icon:Newspaper},
   ];
 
   if (marketError || developmentError) return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",padding:24,background:"#080d16",color:"#dce5f2"}}>{marketError || developmentError}</div>;
@@ -418,9 +420,10 @@ export default function Home() {
 
         <div className="content">
           {notice && <div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={15}/></button></div>}
-          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / {section==="Campeonatos" ? (selectedChampionship ? "CAMPEONATO SELECIONADO" : "CENTRAL DE CAMPEONATOS") : "F1 2026"}</div><h1>{section==="Campeonatos" && selectedChampionship ? registeredChampionships.find(c=>c.id===selectedChampionship)?.name : section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?(selectedChampionship?"Gerencie classificação, calendário e resultados deste campeonato.":"Selecione um campeonato para acessar sua área de gerenciamento."):section==="Histórico"?"Consulte as classificações finais e os resultados preservados de temporadas anteriores.":"Acompanhe movimentações e simule o mercado de pilotos."}</p></div>{section!=="Campeonatos" && section!=="Histórico" && <button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button>}</div>
+          <div className="page-heading"><div><div className="eyebrow"><span className="live-dot"/> MOTORSPORT HUB / {section==="Campeonatos" ? (selectedChampionship ? "CAMPEONATO SELECIONADO" : "CENTRAL DE CAMPEONATOS") : "F1 2026"}</div><h1>{section==="Campeonatos" && selectedChampionship ? registeredChampionships.find(c=>c.id===selectedChampionship)?.name : section==="Visão geral"?"Visão geral":section}</h1><p>{section==="Visão geral"?"Central de comando da temporada 2026.":section==="Pilotos"?"Gerencie os 22 pilotos do grid da Fórmula 1.":section==="Equipes"?"Estrutura das equipes inscritas na temporada.":section==="Campeonatos"?(selectedChampionship?"Gerencie classificação, calendário e resultados deste campeonato.":"Selecione um campeonato para acessar sua área de gerenciamento."):section==="Histórico"?"Consulte as classificações finais e os resultados preservados de temporadas anteriores.":section==="Paddock News"?"Notícias, rumores e bastidores exclusivos da Fórmula 1.":"Acompanhe movimentações e simule o mercado de pilotos."}</p></div>{section!=="Campeonatos" && section!=="Histórico" && section!=="Paddock News" && <button className="primary-button" onClick={()=>{setModal(true);setNotice("")}}><Plus size={17}/> Nova transferência</button>}</div>
 
           {section==="Histórico" && <SeasonHistory/>}
+          {section==="Paddock News" && <PaddockNews/>}
           {section==="Campeonatos" && !selectedChampionship && <div className="championship-catalog"><div className="catalog-toolbar"><div><h2>Campeonatos cadastrados</h2><p>{registeredChampionships.length} campeonato(s) disponível(is) no sistema</p></div><span className="catalog-counter"><Trophy size={15}/>{String(registeredChampionships.length).padStart(2,"0")} ATIVO(S)</span></div><div className="catalog-grid">{registeredChampionships.map(champ=><button type="button" className="panel catalog-card" key={champ.id} onClick={()=>setSelectedChampionship(champ.id)}><div className="catalog-card-top"><span className="catalog-mark"><Trophy size={22}/></span><span className="status-tag">{champ.status}</span></div><span className="catalog-category">{champ.category} · {champ.organizer}</span><h3>{champ.name}</h3><p>{champ.description}</p><div className="catalog-card-footer"><span><b>{champ.season}</b><small>TEMPORADA</small></span><span><b>{champ.rounds}</b><small>ETAPAS</small></span><span className="catalog-open">Abrir campeonato <ArrowUpRight size={15}/></span></div></button>)}</div></div>}
           {((section==="Campeonatos" && selectedChampionship==="f1") || section==="Configurações") && <>{section==="Campeonatos" && <button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button>}<Championship drivers={drivers} teams={teams} driverDetails={driverDetails} development={development} setDevelopment={setDevelopment} settingsOnly={section==="Configurações"}/></>}
           {section==="Campeonatos" && selectedChampionship==="f2" && <><button className="champ-back-button" onClick={()=>setSelectedChampionship(null)}><ArrowLeft size={15}/> Voltar para todos os campeonatos</button><Formula2Championship development={development} setDevelopment={setDevelopment} drivers={f2Drivers} setDrivers={setF2Drivers}/></>}
