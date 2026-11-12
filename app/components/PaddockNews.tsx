@@ -17,7 +17,8 @@ const teamNames:Record<string,string>={mcl:"McLaren",mer:"Mercedes",red:"Red Bul
 export default function PaddockNews({drivers,moves}:{drivers:Driver[];moves:Move[]}){
   const [articles,setArticles,ready,error]=useCloudState<Article[]>("paddock-news:f1",[]);
   const [races,,racesReady,racesError]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,[]);
-  const [results,,resultsReady,resultsError]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);\n  const [agreements,,agreementsReady,agreementsError]=useCloudState<Agreement[]>("workspace:driver-contracts:v1",[]);
+  const [results,,resultsReady,resultsError]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
+  const [agreements,,agreementsReady,agreementsError]=useCloudState<Agreement[]>("workspace:driver-contracts:v1",[]);
   const driverById=useMemo(()=>new Map(drivers.map(d=>[d.id,d])),[drivers]);
   useEffect(()=>{
     if(!ready||!racesReady||!resultsReady||!agreementsReady||error||racesError||resultsError||agreementsError)return;
