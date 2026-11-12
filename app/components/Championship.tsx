@@ -4,6 +4,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { ACTIVE_SEASON } from "@/lib/superLicense";
+import { buildSeasonArchive, type SeasonArchive } from "@/lib/seasonHistory";
 import { CalendarDays, Flag, Plus, Trophy, Medal, ClipboardList, X, Check, Trash2 } from "lucide-react";
 
 type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" | "Aposentado" };
@@ -47,6 +48,7 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const [tab,setTab]=useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
+  const [archives,setArchives,archivesReady,archivesError]=useCloudState<SeasonArchive[]>("championship:f1:history",[]);
   const [raceId,setRaceId]=useState("1");
   const [draftResults,setDraftResults]=useState<Record<string,{position:string;status:string}>>({});
   const [showRace,setShowRace]=useState(false);
@@ -72,8 +74,13 @@ export default function Championship({drivers,teams,driverDetails,development,se
   const finalizeSeason = () => {
     if (!seasonComplete) { setNotice("Registre todos os pilotos elegíveis em todas as etapas antes de finalizar a temporada."); return; }
     if (seasonAlreadyFinalized) { setNotice("A evolução desta temporada já foi aplicada e não será duplicada."); return; }
+    if (!archivesReady || archivesError) { setNotice("O histórico ainda não está sincronizado. Aguarde antes de finalizar."); return; }
+    if (!archives.some(item=>item.category==="F1"&&item.season===ACTIVE_SEASON)) {
+      const archive=buildSeasonArchive("F1",ACTIVE_SEASON,standings,teamStandings,races,results);
+      setArchives(old=>old.some(item=>item.category==="F1"&&item.season===ACTIVE_SEASON)?old:[...old,archive]);
+    }
     setDevelopment(evolveDriverSeason(development, "F1", ACTIVE_SEASON, eligibleDrivers, driverDetails, results));
-    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 1 finalizada. Evolução dos atributos aplicada e salva na nuvem.");
+    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 1 finalizada. Classificações arquivadas e evolução dos atributos aplicada.");
   };
   const addRace=()=>{
     if(!raceName.trim()||!circuit.trim())return;
