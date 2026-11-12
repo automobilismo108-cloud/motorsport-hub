@@ -4,6 +4,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useAuth } from "@/app/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { ACTIVE_SEASON, getSuperLicensePoints, normalizeLicenseAwards } from "@/lib/superLicense";
+import { buildSeasonArchive, type SeasonArchive } from "@/lib/seasonHistory";
 import { useCloudState } from "@/lib/useCloudState";
 import { evolveDriverSeason, getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverDevelopment";
 import { CalendarDays, ClipboardList, Flag, Medal, Trophy, Check, X } from "lucide-react";
@@ -108,6 +109,7 @@ export default function Formula2Championship({development,setDevelopment,drivers
   const [tab,setTab] = useState<"classificacao"|"calendario"|"resultados">("classificacao");
   const [races,setRaces,racesReady,racesError] = useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,initialRaces);
   const [results,setResults,resultsReady,resultsError] = useCloudState<Result[]>(`championship:f2:${ACTIVE_SEASON}:results`,[]);
+   const [archives,setArchives,archivesReady,archivesError] = useCloudState<SeasonArchive[]>("championship:f2:history",[]);
   const [licenseAwardsRaw] = useCloudState<unknown>("superlicense:season-awards", []);
   const { user } = useAuth();
   const [raceId,setRaceId] = useState("1");
@@ -152,10 +154,15 @@ export default function Formula2Championship({development,setDevelopment,drivers
       { onConflict: "user_id,data_key" }
     );
     if (resultsSaveError) { setNotice("Não foi possível salvar os resultados antes da finalização: " + resultsSaveError.message); return; }
+     if (!archivesReady || archivesError) { setNotice("O histórico ainda não está sincronizado. Aguarde antes de finalizar."); return; }
+     if (!archives.some(item=>item.category==="F2"&&item.season===ACTIVE_SEASON)) {
+       const archive=buildSeasonArchive("F2",ACTIVE_SEASON,standings,teamStandings,races,results);
+       setArchives(old=>old.some(item=>item.category==="F2"&&item.season===ACTIVE_SEASON)?old:[...old,archive]);
+     }
     if (!developmentAlreadyApplied) {
       setDevelopment(evolveDriverSeason(development, "F2", ACTIVE_SEASON, activeDrivers, driverDetails, results));
     }
-    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 2 finalizada. Evolução dos pilotos aplicada.");
+    setNotice("Temporada " + ACTIVE_SEASON + " da Fórmula 2 finalizada. Classificações arquivadas e evolução dos pilotos aplicada.");
   };
   const saveResults=()=>{
     const used=new Set<number>(sessionResults.filter(r=>r.position!==null).map(r=>r.position as number));
