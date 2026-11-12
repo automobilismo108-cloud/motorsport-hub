@@ -38,7 +38,7 @@ export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f
   const occupied=rosters[category].filter(d=>d.teamId===teamId&&d.status!=="Transferido"&&d.status!=="Aposentado"&&(type!=="Renovação"||d.id!==selected.id)).length;
   const incoming=signed.filter(a=>a.targetCategory===category&&a.targetTeamId===teamId&&a.type==="Pré-contrato").length;
   if(type==="Pré-contrato"&&occupied+incoming>=capacity(category)){setNotice("A equipe já está no limite de vagas considerando os pré-contratos assinados.");return;}
-  const agreement:Agreement={id:"contract-"+Date.now(),driverId:selected.id,driverName:selected.name,sourceCategory:selected.category,sourceTeam:teamLists[selected.category].find(t=>t.id===selected.teamId)?.name??"Agente livre",targetCategory:category,targetTeamId:teamId,targetTeam:selectedTeam.name,type,signedSeason:ACTIVE_SEASON,effectiveSeason:ACTIVE_SEASON+1,duration,signedStatus:"" as never,status:"Assinado"};
+  const agreement:Agreement={id:"contract-"+Date.now(),driverId:selected.id,driverName:selected.name,sourceCategory:selected.category,sourceTeam:teamLists[selected.category].find(t=>t.id===selected.teamId)?.name??"Agente livre",targetCategory:category,targetTeamId:teamId,targetTeam:selectedTeam.name,type,signedSeason:ACTIVE_SEASON,effectiveSeason:ACTIVE_SEASON+1,duration,status:"Assinado"};
   setAgreements(old=>[agreement,...old]);
   setNotice(type==="Renovação"?"Renovação registrada para "+selected.name+".":"Pré-contrato assinado: "+selected.name+" defenderá "+selectedTeam.name+" a partir de "+(ACTIVE_SEASON+1)+".");
   setDriverId("");
