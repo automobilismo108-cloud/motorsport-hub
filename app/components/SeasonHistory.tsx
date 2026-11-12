@@ -11,9 +11,9 @@ const categories = [
 ] as const;
 
 export default function SeasonHistory() {
-  const [f1,f1Ready,f1Error] = useCloudState<SeasonArchive[]>("championship:f1:history",[]);
-  const [f2,f2Ready,f2Error] = useCloudState<SeasonArchive[]>("championship:f2:history",[]);
-  const [f3,f3Ready,f3Error] = useCloudState<SeasonArchive[]>("championship:f3:history",[]);
+  const [f1,,f1Ready,f1Error] = useCloudState<SeasonArchive[]>("championship:f1:history",[]);
+  const [f2,,f2Ready,f2Error] = useCloudState<SeasonArchive[]>("championship:f2:history",[]);
+  const [f3,,f3Ready,f3Error] = useCloudState<SeasonArchive[]>("championship:f3:history",[]);
   if(f1Error||f2Error||f3Error) return <div className="notice">Não foi possível carregar o histórico. Os registros não foram alterados.</div>;
   if(!f1Ready||!f2Ready||!f3Ready) return <div className="panel" style={{padding:20,color:"#aeb9c7"}}>Carregando histórico de temporadas...</div>;
   const archives=[...f1,...f2,...f3].sort((a,b)=>b.season-a.season||a.category.localeCompare(b.category));
