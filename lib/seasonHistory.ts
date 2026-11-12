@@ -13,8 +13,8 @@ export function buildSeasonArchive(
   season: number,
   drivers: Array<{id:string;name:string;teamId:string;points:number;wins:number;podiums:number}>,
   teams: Array<{id:string;name:string;points:number}>,
-  races: Array<Record<string, unknown>>,
-  results: Array<Record<string, unknown>>
+  races: object[],
+  results: object[]
 ): SeasonArchive {
   const teamNames = new Map(teams.map(team => [team.id, team.name]));
   return {
