@@ -8,10 +8,11 @@ import { getDriverDevelopment, type DriverDevelopmentState } from "@/lib/driverD
 import Championship from "./components/Championship";
 import SeasonHistory from "./components/SeasonHistory";
 import PaddockNews from "./components/PaddockNews";
+import ContractMarket from "./components/ContractMarket";
 import Formula2Championship, { initialF2Drivers, f2Teams, driverDetails as f2DriverDetails, teamDetails as f2TeamDetails, type Driver as F2Driver } from "./components/Formula2Championship";
 import Formula3Championship, { initialF3Drivers, f3Teams, driverDetails as f3DriverDetails, teamDetails as f3TeamDetails, type Driver as F3Driver } from "./components/Formula3Championship";
 import {
-  Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront, History,
+  Activity, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ArrowLeft, Bell, CarFront, History, FileSignature,
   ChevronDown, CircleDollarSign, Flag, Gauge, LayoutDashboard, Menu, Newspaper,
   Plus, Search, Settings, Shield, Trophy, Users, X, Check, Zap
 } from "lucide-react";
@@ -223,7 +224,7 @@ export default function Home() {
   const f3Drivers = marketState.f3 as F3Driver[];
   const moves = marketState.moves as Move[];
   const freeAgents = (marketState.freeAgents ?? INITIAL_FREE_AGENT_POOL.drivers).map(({category:_oldCategory,...driver})=>driver);
-  const [marketTab,setMarketTab] = useState<"movements"|"free">("movements");
+  const [marketTab,setMarketTab] = useState<"movements"|"free"|"contracts">("movements");
   const setF2Drivers: Dispatch<SetStateAction<F2Driver[]>> = action => setMarketState(old => ({
     ...old, f2: typeof action === "function" ? (action as (value:F2Driver[])=>F2Driver[])(old.f2 as F2Driver[]) : action as TransferDriver[]
   }));
@@ -529,8 +530,10 @@ export default function Home() {
             <div className="champ-tabs market-tabs">
               <button className={marketTab==="movements"?"selected":""} onClick={()=>setMarketTab("movements")}><ArrowLeftRight size={14}/> Movimentações</button>
               <button className={marketTab==="free"?"selected":""} onClick={()=>setMarketTab("free")}><Users size={14}/> Pilotos livres <span className="nav-count">{freeAgents.length}</span></button>
+              <button className={marketTab==="contracts"?"selected":""} onClick={()=>setMarketTab("contracts")}><FileSignature size={14}/> Contratos</button>
             </div>
             {marketTab==="movements" && <div className="panel table-panel"><div className="panel-head"><div><h2>Central de transferências</h2><p>Transferências entre equipes, promoções e aposentadorias</p></div><button className="primary-button compact" onClick={()=>setModal(true)}><Plus size={16}/> Nova transferência</button></div><div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ORIGEM</th><th>DESTINO</th><th>DATA</th><th>SITUAÇÃO</th></tr></thead><tbody>{moves.map(m=><tr key={m.id}><td><b>{m.driver}</b></td><td>{m.from}</td><td><span className="team-cell"><ArrowUpRight size={14}/>{m.to}</span></td><td>{m.date}</td><td><span className="status-tag">{m.status}</span></td></tr>)}</tbody></table></div><div className="market-note"><Zap size={16}/><span>Transferências entre equipes e promoções F3 → F2 → F1 são salvas na nuvem. Rebaixamentos não são permitidos; a Superlicença não bloqueia movimentações nesta etapa.</span></div></div>}
+            {marketTab==="contracts" && <ContractMarket f1={drivers} f2={f2Drivers} f3={f3Drivers} teams1={teams} teams2={f2Teams} teams3={f3Teams} awards={superLicenseAwards}/>}
             {marketTab==="free" && <div className="panel table-panel"><div className="panel-head"><div><h2>Pilotos livres</h2><p>{freeAgents.length} pilotos sem contrato disponíveis para contratação</p></div><button className="primary-button compact" disabled={!marketReady||!developmentReady} onClick={()=>{
               try {
                 const generated=generateRandomFreeAgents([...freeAgents,...drivers,...f2Drivers,...f3Drivers]);
