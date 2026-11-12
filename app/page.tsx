@@ -257,7 +257,8 @@ export default function Home() {
   const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : (profileTeam && "headquarters" in profileTeam ? profileTeam.headquarters : undefined);
   const baseProfileDetails = profileDriver ? activeDriverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
-  const profileSuperLicensePoints = profileDriver?.isFictional ? 0 : profileDriver && profileCategory!=="F1"
+  const profileIsFictional = !!profileDriver && (profileDriver.isFictional===true || profileDriver.licenseId?.startsWith("free-agent:")===true || profileDriver.id.startsWith("free-generated-"));
+  const profileSuperLicensePoints = profileIsFictional ? 0 : profileDriver && profileCategory!=="F1"
     ? superLicenseAwards.filter(award => award.driverName.trim().toLocaleLowerCase("pt-BR") === profileDriver.name.trim().toLocaleLowerCase("pt-BR") && award.season >= ACTIVE_SEASON-2 && award.season <= ACTIVE_SEASON).reduce((sum,award)=>sum+Math.max(0,Number(award.points)||0),0)
     : 0;
   const profileSuperLicenseLabel = profileCategory==="F1" ? "COMPLETO" : profileSuperLicensePoints>=40 ? "COMPLETO" : profileSuperLicensePoints+" / 40 PTS";
