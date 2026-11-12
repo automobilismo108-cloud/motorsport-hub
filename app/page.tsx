@@ -17,6 +17,7 @@ import {
 type Team = { id: string; name: string; color: string; short: string };
 type Driver = { id: string; licenseId?: string; name: string; country: string; number: number; teamId: string; status: "Titular" | "Reserva" | "Transferido" | "Aposentado"; isFictional?: boolean };
 type Move = { id: number; driver: string; from: string; to: string; date: string; status: string; category?: string };
+type SuperLicenseAwardRecord = { driverName: string; category: "F2" | "F3"; season: number; points: number };
 
 const initialTeams: Team[] = [
   { id:"mcl", name:"McLaren", short:"MCL", color:"#ff8700" },
@@ -228,6 +229,7 @@ export default function Home() {
     ...old, f3: typeof action === "function" ? (action as (value:F3Driver[])=>F3Driver[])(old.f3 as F3Driver[]) : action as TransferDriver[]
   }));
   const [development,setDevelopment,developmentReady,developmentError] = useCloudState<DriverDevelopmentState>("driver-development:state",INITIAL_FREE_AGENT_POOL.development);
+  const [superLicenseAwards] = useCloudState<SuperLicenseAwardRecord[]>("superlicense:season-awards",[]);
   const [search, setSearch] = useState("");
   const [pilotsCategory,setPilotsCategory] = useState<"F1"|"F2"|"F3">("F1");
   const [teamsCategory,setTeamsCategory] = useState<"F1"|"F2"|"F3">("F1");
@@ -255,6 +257,10 @@ export default function Home() {
   const profileTeamHeadquarters = profileCategory==="F1" ? teamDetails[profileTeam?.id ?? ""]?.headquarters : (profileTeam && "headquarters" in profileTeam ? profileTeam.headquarters : undefined);
   const baseProfileDetails = profileDriver ? activeDriverDetails[profileDriver.name] : undefined;
   const profileDevelopment = profileDriver ? (development[profileDriver.licenseId ?? profileDriver.id] ?? (baseProfileDetails ? getDriverDevelopment(development,profileDriver.licenseId ?? profileDriver.id,baseProfileDetails,ACTIVE_SEASON) : undefined)) : undefined;
+  const profileSuperLicensePoints = profileDriver?.isFictional ? 0 : profileDriver && profileCategory!=="F1"
+    ? superLicenseAwards.filter(award => award.driverName.trim().toLocaleLowerCase("pt-BR") === profileDriver.name.trim().toLocaleLowerCase("pt-BR") && award.season >= ACTIVE_SEASON-2 && award.season <= ACTIVE_SEASON).reduce((sum,award)=>sum+Math.max(0,Number(award.points)||0),0)
+    : 0;
+  const profileSuperLicenseLabel = profileCategory==="F1" ? "COMPLETO" : profileSuperLicensePoints>=40 ? "COMPLETO" : profileSuperLicensePoints+" / 40 PTS";
   const profileDetails = profileDevelopment
     ? { age: profileDevelopment.age, contractUntil: baseProfileDetails && "contractUntil" in baseProfileDetails ? baseProfileDetails.contractUntil : null, attributes: profileDevelopment.attributes }
     : baseProfileDetails
@@ -426,7 +432,7 @@ export default function Home() {
               <div className="panel driver-fact"><span>IDADE</span><b>{profileDetails?.age ?? "—"} anos</b></div>
               <div className="panel driver-fact"><span>NACIONALIDADE</span><b>{profileDriver.country}</b></div>
               <div className="panel driver-fact"><span>CONTRATO ATUAL</span><b>{profileDetails?.contractUntil ? `Até o fim de ${profileDetails.contractUntil}` : "Não divulgado"}</b></div>
-              <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>COMPLETO</b></div>
+              <div className="panel driver-fact"><span>SUPERLICENÇA</span><b>{profileSuperLicenseLabel}</b></div>
             </div>
             <div className="panel driver-attributes-panel">
               <div className="panel-head"><div><h2>Desenvolvimento do piloto</h2><p>Evolução automática ao final de cada temporada</p></div><span className="status-tag">POTENCIAL {profileDevelopment?.potential ?? "—"}/100</span></div>
