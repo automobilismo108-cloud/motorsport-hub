@@ -82,3 +82,45 @@
 @media(max-width:600px){.team-profile-hero{align-items:flex-start;flex-wrap:wrap;padding:16px}.team-profile-emblem{min-width:58px;height:58px;font-size:16px}.team-profile-hero>.status-tag{width:100%}}
 
 .market-tabs{margin-bottom:14px}.free-agent-origin{margin-top:4px;color:#8290a1;font-size:9px}.market-tabs .nav-count{margin-left:2px}
+
+
+/* Paddock News */
+.paddock-page{display:flex;flex-direction:column;gap:16px}
+.paddock-masthead{padding:24px 26px;background:linear-gradient(120deg,#171f2b,#101722 65%,#292016);border-color:#3b4654}
+.paddock-kicker,.paddock-edition{display:flex;align-items:center;gap:8px;color:#ffad4d;font-size:9px;font-weight:800;letter-spacing:1.4px}
+.paddock-brand{display:flex;align-items:center;gap:14px;margin:18px 0}
+.paddock-brand>svg{color:#ffad4d}
+.paddock-brand h2{margin:0;color:#f5f7fa;font:700 29px 'Space Grotesk';letter-spacing:1.5px}
+.paddock-brand p{margin:4px 0 0;color:#a8b3c1;font-size:12px}
+.paddock-edition{color:#8794a4}
+.paddock-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.paddock-toolbar h2{margin:4px 0;color:#edf2f7;font:600 20px 'Space Grotesk'}
+.paddock-toolbar p{margin:0;color:#8794a4;font-size:11px}
+.paddock-composer{padding:20px;display:flex;flex-direction:column;gap:13px}
+.paddock-composer h3{margin:0;color:#edf2f7;font:600 16px 'Space Grotesk'}
+.paddock-composer label{display:flex;flex-direction:column;gap:7px;color:#9ba8b8;font-size:9px;font-weight:700;letter-spacing:1px}
+.paddock-composer input,.paddock-composer select,.paddock-composer textarea{width:100%;padding:11px 12px;border:1px solid #344151;border-radius:6px;background:#111a25;color:#e8edf4;font:inherit;font-size:12px;letter-spacing:0;outline:none}
+.paddock-composer textarea{resize:vertical;line-height:1.6}
+.paddock-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.paddock-form-actions{display:flex;justify-content:flex-end;gap:9px}
+.paddock-filters{display:flex;gap:7px;flex-wrap:wrap}
+.paddock-filters button{padding:8px 12px;border:1px solid #303b49;border-radius:20px;background:#141d28;color:#9ba8b8;font-size:10px;cursor:pointer}
+.paddock-filters button.active{border-color:#bd7937;background:#332719;color:#ffc078}
+.paddock-articles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.paddock-article{padding:19px;min-width:0}
+.paddock-article-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#8190a1;font-size:9px}
+.paddock-article-meta time{margin-left:auto}
+.paddock-article-meta button{display:grid;place-items:center;padding:4px;border:0;background:transparent;color:#8290a1;cursor:pointer}
+.paddock-type{padding:4px 7px;border-radius:4px;background:#253342;color:#c4d3e4;font-weight:800;text-transform:uppercase;letter-spacing:.7px}
+.paddock-type.confirmada{background:#19372d;color:#7de0ae}
+.paddock-type.rumor{background:#42321b;color:#f3c16f}
+.paddock-type.análise{background:#26334b;color:#a8c8ff}
+.paddock-article h3{margin:14px 0 8px;color:#f0f3f7;font:600 17px 'Space Grotesk';line-height:1.35}
+.paddock-article p{margin:0 0 15px;color:#b1bdca;font-size:12px;line-height:1.75;white-space:pre-wrap}
+.paddock-article>small{color:#68798c;font-size:8px;letter-spacing:1.1px;font-weight:700}
+.paddock-empty{padding:42px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;color:#8794a4}
+.paddock-empty svg{color:#ffad4d}
+.paddock-empty h3{margin:12px 0 5px;color:#edf2f7;font:600 16px 'Space Grotesk'}
+.paddock-empty p{max-width:440px;margin:0;font-size:11px;line-height:1.7}
+.paddock-disclaimer{color:#718093;font-size:9px;line-height:1.6}
+@media(max-width:700px){.paddock-articles{grid-template-columns:1fr}.paddock-toolbar{align-items:flex-start;flex-direction:column}.paddock-form-row{grid-template-columns:1fr}.paddock-brand h2{font-size:23px}.paddock-masthead{padding:19px}}
