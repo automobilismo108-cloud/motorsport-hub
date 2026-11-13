@@ -27,11 +27,14 @@ export function getTeamSeasonAssessment(input:{teamId:string;teamName:string;cat
  const profile=getTeamDecisionProfile(input.teamId),ids=new Set(input.drivers.map(d=>d.id));
  const points=input.results.filter(r=>ids.has(r.driverId)).reduce((s,r)=>s+(Number(r.points)||0),0);
  const rounds=Math.max(1,input.roundsCompleted),averagePerRound=points/rounds;
- const records=input.drivers.map(d=>input.development[d.licenseId??d.id]??input.development[d.id]).filter((v):v is NonNullable<typeof v>=>!!v);\n const ratings=records.map(record=>(record.attributes.racePace+record.attributes.qualifying+record.attributes.overtaking+record.attributes.defending+record.attributes.consistency)/5);\n const averageAge=records.length?records.reduce((sum,record)=>sum+record.age,0)/records.length:null;
+ const records=input.drivers.map(d=>input.development[d.licenseId??d.id]??input.development[d.id]).filter(Boolean) as Array<DriverDevelopmentState[string]>;
+ const ratings=records.map(record=>(record.attributes.racePace+record.attributes.qualifying+record.attributes.overtaking+record.attributes.defending+record.attributes.consistency)/5);
+ const averageAge=records.length?records.reduce((sum,record)=>sum+record.age,0)/records.length:null;
  const overall=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:null;
  const goal=profile.philosophy==="vencedora"?"Disputar vitórias e títulos":profile.philosophy==="formadora"?"Desenvolver jovens talentos":profile.philosophy==="reconstrucao"?"Construir uma base competitiva":profile.philosophy==="conservadora"?"Manter estabilidade e consistência":profile.philosophy==="agressiva"?"Buscar evolução e oportunidades": "Equilibrar resultados e desenvolvimento";
  const expected=input.category==="F1"?(profile.philosophy==="vencedora"?18:10):input.category==="F2"?12:8;
  const crisis=rounds>=4&&averagePerRound<expected*0.35;
  const alert=crisis?"Pressão por resultados: desempenho abaixo da meta":input.drivers.length===0?"Sem pilotos titulares cadastrados":null;
- return {goal,crisis,alert,points,averagePerRound:Number(averagePerRound.toFixed(1)),driverAverage:overall===null?null:Number(overall.toFixed(1)),philosophy:profile.philosophy,summary:profile.summary,riskTolerance:profile.riskTolerance};
+ const strategicFocus=crisis?(profile.riskTolerance>=.65?"Aumentar a aposta em jovens talentos e oportunidades no mercado":"Priorizar estabilidade e recuperar consistência"):(averageAge!==null&&averageAge<23?"Investir em desenvolvimento e continuidade do grupo":averageAge!==null&&averageAge>=32?"Planejar renovação gradual do elenco":profile.philosophy==="vencedora"?"Manter competitividade e buscar desempenho imediato":profile.philosophy==="formadora"?"Dar prioridade à evolução dos pilotos":"Manter equilíbrio entre resultados e desenvolvimento");
+ return {goal,crisis,alert,points,averagePerRound:Number(averagePerRound.toFixed(1)),driverAverage:overall===null?null:Number(overall.toFixed(1)),averageAge:averageAge===null?null:Number(averageAge.toFixed(1)),strategicFocus,philosophy:profile.philosophy,summary:profile.summary,riskTolerance:profile.riskTolerance};
 }
