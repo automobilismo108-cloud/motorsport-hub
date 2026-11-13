@@ -39,7 +39,7 @@ export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f
   for(const set of sets){
    for(const race of set.races.filter(r=>r.status==="Concluída"&&r.round%4===0)){
     const eventKey="auto-renew-"+set.category+"-"+race.id;
-    if(current.some(a=>a.eventKey===eventKey)||add.some(a=>a.eventKey===eventKey))continue;
+    if(current.some(a=>a.eventKey.startsWith(eventKey))||add.some(a=>a.eventKey.startsWith(eventKey)))continue;
     for(const team of set.teams){
      const candidates=set.drivers.filter(d=>d.teamId===team.id&&!already(d.id)).sort((a,b)=>points(b.id,set.results)-points(a.id,set.results));
      const best=candidates[0];
