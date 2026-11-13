@@ -71,12 +71,35 @@ export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f
  if(error||e1||xe1||e2||xe2||e3||xe3)return <div className="notice">Não foi possível sincronizar o mercado automático de contratos. Os dados existentes foram preservados.</div>;
  if(!ready||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready)return <div className="panel" style={{padding:20}}>Sincronizando decisões automáticas das equipes...</div>;
  const ordered=[...agreements].sort((a,b)=>b.signedSeason-a.signedSeason||b.effectiveSeason-a.effectiveSeason);
+ const roster=[
+  ...f1.filter(active).map(d=>({...d,category:"F1" as const,teamName:teams1.find(t=>t.id===d.teamId)?.name??"Equipe não identificada"})),
+  ...f2.filter(active).map(d=>({...d,category:"F2" as const,teamName:teams2.find(t=>t.id===d.teamId)?.name??"Equipe não identificada"})),
+  ...f3.filter(active).map(d=>({...d,category:"F3" as const,teamName:teams3.find(t=>t.id===d.teamId)?.name??"Equipe não identificada"}))
+ ].sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name));
+ const latestAgreement=(driverId:string)=>ordered.find(a=>a.driverId===driverId&&a.status==="Assinado");
+ const covered=roster.filter(d=>latestAgreement(d.id)).length;
+ const withoutAgreement=roster.length-covered;
+
  return <div className="market-contracts">
   <div className="panel table-panel">
    <div className="panel-head"><div><h2>Mercado automático de contratos</h2><p>Equipes e pilotos negociam sem intervenção. As decisões são avaliadas conforme os resultados de F1, F2 e F3.</p></div><Activity size={22}/></div>
    <div className="market-note"><FileSignature size={16}/><span>Renovações e pré-contratos são gerados automaticamente em marcos da temporada. Acordos valem a partir de {ACTIVE_SEASON+1}, duram 2 temporadas e ficam sujeitos à capacidade das equipes. Promoções entre categorias exigem Superlicença completa (40 pontos).</span></div>
    <div className="contract-auto-status"><span className="status-tag">AUTOMAÇÃO ATIVA</span><span>{ordered.length} acordo(s) no histórico</span><RefreshCw size={16}/></div>
   </div>
+  <section className="contract-dashboard">
+   <div className="contract-dashboard-heading"><div><h2>Painel de contratos</h2><p>Visão geral dos vínculos registrados para os pilotos ativos das três categorias.</p></div><span>{roster.length} pilotos ativos</span></div>
+   <div className="contract-summary-grid">
+    <div className="contract-summary-card"><span>PILOTOS ATIVOS</span><strong>{roster.length}</strong></div>
+    <div className="contract-summary-card"><span>ACORDOS REGISTRADOS</span><strong>{covered}</strong></div>
+    <div className="contract-summary-card"><span>SEM ACORDO REGISTRADO</span><strong>{withoutAgreement}</strong></div>
+   </div>
+   <div className="panel table-panel contract-roster-panel">
+    <div className="panel-head"><div><h2>Situação contratual por piloto</h2><p>Os prazos exibidos correspondem aos acordos salvos no sistema. Contratos anteriores ainda não cadastrados aparecem como não informados.</p></div><FileSignature size={18}/></div>
+    <div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>CATEGORIA</th><th>EQUIPE ATUAL</th><th>SITUAÇÃO</th><th>VIGÊNCIA REGISTRADA</th></tr></thead><tbody>
+     {roster.map(d=>{const agreement=latestAgreement(d.id);return <tr key={d.category+"-"+d.id}><td><b>{d.name}</b></td><td>{d.category}</td><td>{d.teamName}</td><td>{agreement?<span className="status-tag">{agreement.type==="Renovação"?"Renovação assinada":"Pré-contrato assinado"}</span>:<span className="contract-no-record">Sem acordo registrado</span>}</td><td>{agreement?agreement.effectiveSeason+"–"+(agreement.effectiveSeason+agreement.duration-1):"Não informada"}</td></tr>;})}
+    </tbody></table></div>
+   </div>
+  </section>
   <div className="panel table-panel"><div className="panel-head"><div><h2>Decisões das equipes</h2><p>Contratos, renovações e pré-contratos assinados automaticamente</p></div><FileSignature size={18}/></div>
    {!ordered.length?<div className="paddock-empty">Nenhuma decisão contratual ainda. O sistema avaliará o mercado conforme as etapas forem concluídas.</div>:<div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ACORDO</th><th>EQUIPE</th><th>VIGÊNCIA</th><th>STATUS</th></tr></thead><tbody>{ordered.map(a=><tr key={a.eventKey}><td><b>{a.driverName}</b><div className="free-agent-origin">{a.sourceCategory} · {a.sourceTeam}</div></td><td>{a.type}<div className="free-agent-origin">{a.reason}</div></td><td>{a.targetTeam} · {a.targetCategory}</td><td>{a.effectiveSeason}–{a.effectiveSeason+a.duration-1}</td><td><span className="status-tag">{a.status}</span></td></tr>)}</tbody></table></div>}
   </div>
