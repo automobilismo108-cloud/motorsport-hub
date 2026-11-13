@@ -36,7 +36,17 @@ export default function PaddockNews({drivers,moves}:{drivers:Driver[];moves:Move
       const subject=sorted[0]?.driver;
       if(subject)generated.push({id:`f1-rumor-${race.id}`,eventKey:`f1-rumor-${race.id}`,title:`Rumores no paddock: futuro de ${subject.name} entra em debate`,category:"Rumor",tag:"Bastidores",body:`Após ${race.name}, começam especulações sobre os próximos passos de ${subject.name}. O desempenho recente alimenta conversas sobre pressão e expectativas dentro do paddock, mas não existe confirmação de negociação ou mudança de equipe. Este é um conteúdo editorial fictício e não altera contratos, elencos ou transferências do campeonato.`,createdAt:now,season:ACTIVE_SEASON});
     }
-    for(const agreement of agreements.filter(a=>a.status==="Assinado"&&a.signedSeason===ACTIVE_SEASON&&a.targetCategory==="F1")){\n      const key="f1-contract-"+agreement.id;\n      generated.push({id:key,eventKey:key,title:agreement.type==="Renovação"?agreement.driverName+" renova contrato com "+agreement.targetTeam:agreement.targetTeam+" garante pré-contrato de "+agreement.driverName,category:"Confirmada",tag:"Mercado de pilotos",body:agreement.type==="Renovação"?agreement.driverName+" assinou uma renovação com "+agreement.targetTeam+" por "+agreement.duration+" temporada(s). O vínculo passa a valer conforme o acordo registrado.":agreement.targetTeam+" confirmou um pré-contrato com "+agreement.driverName,+" para a temporada "+agreement.effectiveSeason+". O piloto permanece na equipe atual até o fim da temporada "+ACTIVE_SEASON+".",createdAt:now,season:ACTIVE_SEASON});\n    }\n    for(const move of moves){
+    for (const agreement of agreements.filter(a => a.status === "Assinado" && a.signedSeason === ACTIVE_SEASON && a.targetCategory === "F1")) {
+      const key = "f1-contract-" + agreement.id;
+      const headline = agreement.type === "Renovação"
+        ? agreement.driverName + " renova contrato com " + agreement.targetTeam
+        : agreement.targetTeam + " garante pré-contrato de " + agreement.driverName;
+      const body = agreement.type === "Renovação"
+        ? agreement.driverName + " assinou uma renovação com " + agreement.targetTeam + " por " + agreement.duration + " temporada(s)."
+        : agreement.targetTeam + " confirmou um pré-contrato com " + agreement.driverName + " para a temporada " + agreement.effectiveSeason + ". O piloto permanece na equipe atual até o fim da temporada " + ACTIVE_SEASON + ".";
+      generated.push({ id: key, eventKey: key, title: headline, category: "Confirmada", tag: "Mercado de pilotos", body, createdAt: now, season: ACTIVE_SEASON });
+    }
+    for(const move of moves){
       const related=move.category?.includes("F1")||move.from.toLowerCase().includes("f1")||move.to.toLowerCase().includes("f1")||Object.values(teamNames).some(name=>move.from===name||move.to===name)||move.to==="Aposentadoria"&&drivers.some(d=>d.name===move.driver);
       if(!related||move.status!=="Concluída")continue;
       const key=`f1-move-${move.id}`;
