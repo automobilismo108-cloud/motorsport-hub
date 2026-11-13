@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { Activity, FileSignature, RefreshCw } from "lucide-react";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getSuperLicensePoints, normalizeLicenseAwards } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
-import { getTeamDecisionProfile, scoreTeamCandidate } from "@/lib/teamIntelligence";
+import { getTeamDecisionProfile, scoreTeamCandidate, getTeamSeasonAssessment } from "@/lib/teamIntelligence";
+import type { DriverDevelopmentState } from "@/lib/driverDevelopment";
 
 type Driver={id:string;licenseId?:string;name:string;teamId:string;status?:string;isFictional?:boolean};
 type Team={id:string;name:string};
@@ -14,7 +15,7 @@ type Agreement={id:string;eventKey:string;driverId:string;driverName:string;sour
 const KEY="workspace:driver-contracts:v1";
 const active=(d:Driver)=>d.status!=="Transferido"&&d.status!=="Aposentado";
 
-export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,onFreeAgentSigned}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;onFreeAgentSigned:(ids:string[])=>void}){
+export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,development,onFreeAgentSigned}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;development:DriverDevelopmentState;onFreeAgentSigned:(ids:string[])=>void}){
  const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);
  const [r1,,r1Ready,e1]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,[]);
  const [x1,,x1Ready,xe1]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
@@ -83,10 +84,10 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
       +add.filter(a=>a.targetCategory===targetCategory&&a.targetTeamId===team.id&&a.status==="Assinado"&&a.effectiveSeason===ACTIVE_SEASON+1).length;
      const currentCount=targetSet.drivers.filter(d=>d.teamId===team.id).length;
      if(currentCount+committed>=capacity)continue;
-     const sameCategory=targetSet.drivers.filter(d=>d.teamId!==team.id&&!already(d.id)&&!d.isFictional).sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results)))})-scoreTeamCandidate({teamId:team.id,points:points(a.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results)))}));
+     const sameCategory=targetSet.drivers.filter(d=>d.teamId!==team.id&&!already(d.id)&&!d.isFictional).sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results))),...(development[b.licenseId??b.id]?{potential:development[b.licenseId??b.id].potential,age:development[b.licenseId??b.id].age,attributes:development[b.licenseId??b.id].attributes}:{})})-scoreTeamCandidate({teamId:team.id,points:points(a.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results))),...(development[a.licenseId??a.id]?{potential:development[a.licenseId??a.id].potential,age:development[a.licenseId??a.id].age,attributes:development[a.licenseId??a.id].attributes}:{})}));
      const promotionCandidates=lowerSet?lowerSet.drivers.filter(d=>!already(d.id)&&!d.isFictional&&
       (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS))
-      .sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results)))})-scoreTeamCandidate({teamId:team.id,points:points(a.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results)))})):[];
+      .sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results))),...(development[b.licenseId??b.id]?{potential:development[b.licenseId??b.id].potential,age:development[b.licenseId??b.id].age,attributes:development[b.licenseId??b.id].attributes}:{})})-scoreTeamCandidate({teamId:team.id,points:points(a.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results))),...(development[a.licenseId??a.id]?{potential:development[a.licenseId??a.id].potential,age:development[a.licenseId??a.id].age,attributes:development[a.licenseId??a.id].attributes}:{})})):[];
      const freeCandidates=freeAgents.filter(d=>!freeSigned.includes(d.id)&&!already(d.id)&&
       (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS));
      const chosen=sameCategory.find(d=>points(d.id,targetSet.results)>0)
@@ -135,6 +136,7 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
     </tbody></table></div>
    </div>
   </section>
+  <section className="contract-dashboard"><div className="contract-dashboard-heading"><div><h2>Inteligência e objetivos das equipes</h2><p>Metas, desempenho acumulado e alertas calculados automaticamente.</p></div><span>Temporada {ACTIVE_SEASON}</span></div><div className="team-intelligence-grid">{[...teams1.map(t=>({...t,category:"F1" as const,drivers:f1,results:x1,races:r1})),...teams2.map(t=>({...t,category:"F2" as const,drivers:f2,results:x2,races:r2})),...teams3.map(t=>({...t,category:"F3" as const,drivers:f3,results:x3,races:r3}))].map(team=>{const assessment=getTeamSeasonAssessment({teamId:team.id,teamName:team.name,category:team.category,drivers:team.drivers.filter(d=>d.teamId===team.id&&active(d)),results:team.results,development,roundsCompleted:team.races.filter(r=>r.status==="Concluída").length,season:ACTIVE_SEASON});return <article className="team-intelligence-card" key={team.category+"-"+team.id}><div><b>{team.name}</b><span className="status-tag">{team.category} · {assessment.philosophy}</span></div><p>{assessment.goal}</p><small>{assessment.points} pontos · {assessment.driverAverage===null?"Atributos não cadastrados": "Média dos pilotos "+assessment.driverAverage+"/100"}</small>{assessment.alert&&<strong className="contract-no-record">{assessment.alert}</strong>}<small>{assessment.summary}</small></article>;})}</div></section>
   <div className="panel table-panel"><div className="panel-head"><div><h2>Decisões das equipes</h2><p>Contratos, renovações e pré-contratos assinados automaticamente</p></div><FileSignature size={18}/></div>
    {!ordered.length?<div className="paddock-empty">Nenhuma decisão contratual ainda. O sistema avaliará o mercado conforme as etapas forem concluídas.</div>:<div className="table-wrap"><table><thead><tr><th>PILOTO</th><th>ACORDO</th><th>EQUIPE</th><th>VIGÊNCIA</th><th>STATUS</th></tr></thead><tbody>{ordered.map(a=><tr key={a.eventKey}><td><b>{a.driverName}</b><div className="free-agent-origin">{a.sourceCategory} · {a.sourceTeam}</div></td><td>{a.type}<div className="free-agent-origin">{a.reason}</div></td><td>{a.targetTeam} · {a.targetCategory}</td><td>{a.effectiveSeason}–{a.effectiveSeason+a.duration-1}</td><td><span className="status-tag">{a.status}</span></td></tr>)}</tbody></table></div>}
   </div>
