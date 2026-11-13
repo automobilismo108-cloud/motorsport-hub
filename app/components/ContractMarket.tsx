@@ -13,7 +13,7 @@ type Agreement={id:string;eventKey:string;driverId:string;driverName:string;sour
 const KEY="workspace:driver-contracts:v1";
 const active=(d:Driver)=>d.status!=="Transferido"&&d.status!=="Aposentado";
 
-export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f1:Driver[];f2:Driver[];f3:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown}){
+export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,onFreeAgentSigned}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;onFreeAgentSigned:(ids:string[])=>void}){
  const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);
  const [r1,,r1Ready,e1]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,[]);
  const [x1,,x1Ready,xe1]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
@@ -66,8 +66,42 @@ export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f
     if(destination)make(prospect,lower,upper,destination.team,"Pré-contrato",eventKey+"-"+prospect.id,"A equipe identificou potencial de promoção. A Superlicença completa foi validada automaticamente.");
    }
   }
+  // Pré-contratos automáticos: equipes podem contratar pilotos da mesma categoria,
+  // promover pilotos da categoria imediatamente inferior ou contratar agentes livres.
+  const freeSigned:string[]=[];
+  for(const [targetCategory,sourceCategory] of [["F1","F2"],["F2","F3"],["F3",null]] as const){
+   const targetSet=sets.find(s=>s.category===targetCategory)!;
+   const lowerSet=sourceCategory?sets.find(s=>s.category===sourceCategory)!:null;
+   const triggerRaces=targetSet.races.filter(r=>r.status==="Concluída"&&r.round%6===0);
+   for(const race of triggerRaces){
+    const eventKey="auto-open-market-"+targetCategory+"-"+race.id;
+    if(current.some(a=>a.eventKey.startsWith(eventKey))||add.some(a=>a.eventKey.startsWith(eventKey)))continue;
+    const capacity=targetCategory==="F3"?3:2;
+    for(const team of targetSet.teams){
+     const committed=current.filter(a=>a.targetCategory===targetCategory&&a.targetTeamId===team.id&&a.status==="Assinado"&&a.effectiveSeason===ACTIVE_SEASON+1).length
+      +add.filter(a=>a.targetCategory===targetCategory&&a.targetTeamId===team.id&&a.status==="Assinado"&&a.effectiveSeason===ACTIVE_SEASON+1).length;
+     const currentCount=targetSet.drivers.filter(d=>d.teamId===team.id).length;
+     if(currentCount+committed>=capacity)continue;
+     const sameCategory=targetSet.drivers.filter(d=>d.teamId!==team.id&&!already(d.id)&&!d.isFictional).sort((a,b)=>points(b.id,targetSet.results)-points(a.id,targetSet.results));
+     const promotionCandidates=lowerSet?lowerSet.drivers.filter(d=>!already(d.id)&&!d.isFictional&&
+      (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS))
+      .sort((a,b)=>points(b.id,lowerSet.results)-points(a.id,lowerSet.results)):[];
+     const freeCandidates=freeAgents.filter(d=>!freeSigned.includes(d.id)&&!already(d.id)&&
+      (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS));
+     const chosen=sameCategory.find(d=>points(d.id,targetSet.results)>0)
+      ??promotionCandidates.find(d=>points(d.id,lowerSet!.results)>0)
+      ??freeCandidates[0];
+     if(!chosen)continue;
+     const source=freeCandidates.includes(chosen)?targetCategory:(promotionCandidates.includes(chosen)?sourceCategory!:targetCategory);
+     const sourceTeam=source===targetCategory?targetSet.teams.find(t=>t.id===chosen.teamId)?.name??"Agente livre":lowerSet?.teams.find(t=>t.id===chosen.teamId)?.name??"Agente livre";
+     add.push({id:eventKey+"-"+chosen.id,eventKey:eventKey+"-"+chosen.id,driverId:chosen.id,driverName:chosen.name,sourceCategory:source,sourceTeam,targetCategory,targetTeamId:team.id,targetTeam:team.name,type:"Pré-contrato",signedSeason:ACTIVE_SEASON,effectiveSeason:ACTIVE_SEASON+1,duration:2,status:"Assinado",reason:source===targetCategory?"Acordo automático com piloto da mesma categoria.":sourceCategory?"Pré-contrato automático para promoção à categoria imediatamente superior.":"Agente livre contratado automaticamente para a próxima temporada."});
+     if(freeCandidates.includes(chosen))freeSigned.push(chosen.id);
+    }
+   }
+  }
+  if(freeSigned.length)onFreeAgentSigned(freeSigned);
   if(add.length)setAgreements(old=>{const keys=new Set(old.map(a=>a.eventKey));const fresh=add.filter(a=>!keys.has(a.eventKey));return fresh.length?[...old,...fresh]:old;});
- },[ready,r1Ready,x1Ready,r2Ready,x2Ready,r3Ready,x3Ready,error,e1,xe1,e2,xe2,e3,xe3,agreements,r1,x1,r2,x2,r3,x3,f1,f2,f3,teams1,teams2,teams3,awards,setAgreements]);
+ },[ready,r1Ready,x1Ready,r2Ready,x2Ready,r3Ready,x3Ready,error,e1,xe1,e2,xe2,e3,xe3,agreements,r1,x1,r2,x2,r3,x3,f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,onFreeAgentSigned,setAgreements]);
  if(error||e1||xe1||e2||xe2||e3||xe3)return <div className="notice">Não foi possível sincronizar o mercado automático de contratos. Os dados existentes foram preservados.</div>;
  if(!ready||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready)return <div className="panel" style={{padding:20}}>Sincronizando decisões automáticas das equipes...</div>;
  const ordered=[...agreements].sort((a,b)=>b.signedSeason-a.signedSeason||b.effectiveSeason-a.effectiveSeason);
@@ -83,7 +117,7 @@ export default function ContractMarket({f1,f2,f3,teams1,teams2,teams3,awards}:{f
  return <div className="market-contracts">
   <div className="panel table-panel">
    <div className="panel-head"><div><h2>Mercado automático de contratos</h2><p>Equipes e pilotos negociam sem intervenção. As decisões são avaliadas conforme os resultados de F1, F2 e F3.</p></div><Activity size={22}/></div>
-   <div className="market-note"><FileSignature size={16}/><span>Renovações e pré-contratos são gerados automaticamente em marcos da temporada. Acordos valem a partir de {ACTIVE_SEASON+1}, duram 2 temporadas e ficam sujeitos à capacidade das equipes. Promoções entre categorias exigem Superlicença completa (40 pontos).</span></div>
+   <div className="market-note"><FileSignature size={16}/><span>Renovações e pré-contratos são gerados automaticamente em marcos da temporada. Acordos valem a partir de {ACTIVE_SEASON+1}, duram 2 temporadas e respeitam as vagas futuras. F1 aceita pilotos de F1 ou promovidos da F2 com Superlicença completa; F2 aceita pilotos de F2, promovidos da F3 e agentes livres; F3 aceita pilotos da F3 e agentes livres.</span></div>
    <div className="contract-auto-status"><span className="status-tag">AUTOMAÇÃO ATIVA</span><span>{ordered.length} acordo(s) no histórico</span><RefreshCw size={16}/></div>
   </div>
   <section className="contract-dashboard">
