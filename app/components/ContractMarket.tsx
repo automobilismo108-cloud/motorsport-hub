@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Activity, FileSignature, RefreshCw } from "lucide-react";
 import { ACTIVE_SEASON, REQUIRED_SUPER_LICENSE_POINTS, getSuperLicensePoints, normalizeLicenseAwards } from "@/lib/superLicense";
 import { useCloudState } from "@/lib/useCloudState";
+import { getTeamDecisionProfile, scoreTeamCandidate } from "@/lib/teamIntelligence";
 
 type Driver={id:string;licenseId?:string;name:string;teamId:string;status?:string;isFictional?:boolean};
 type Team={id:string;name:string};
@@ -82,10 +83,10 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
       +add.filter(a=>a.targetCategory===targetCategory&&a.targetTeamId===team.id&&a.status==="Assinado"&&a.effectiveSeason===ACTIVE_SEASON+1).length;
      const currentCount=targetSet.drivers.filter(d=>d.teamId===team.id).length;
      if(currentCount+committed>=capacity)continue;
-     const sameCategory=targetSet.drivers.filter(d=>d.teamId!==team.id&&!already(d.id)&&!d.isFictional).sort((a,b)=>points(b.id,targetSet.results)-points(a.id,targetSet.results));
+     const sameCategory=targetSet.drivers.filter(d=>d.teamId!==team.id&&!already(d.id)&&!d.isFictional).sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results)))})-scoreTeamCandidate({teamId:team.id,points:points(a.id,targetSet.results),bestPoints:Math.max(1,...targetSet.drivers.map(x=>points(x.id,targetSet.results)))}));
      const promotionCandidates=lowerSet?lowerSet.drivers.filter(d=>!already(d.id)&&!d.isFictional&&
       (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS))
-      .sort((a,b)=>points(b.id,lowerSet.results)-points(a.id,lowerSet.results)):[];
+      .sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(b.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results)))})-scoreTeamCandidate({teamId:team.id,points:points(a.id,lowerSet.results),bestPoints:Math.max(1,...lowerSet.drivers.map(x=>points(x.id,lowerSet.results)))})):[];
      const freeCandidates=freeAgents.filter(d=>!freeSigned.includes(d.id)&&!already(d.id)&&
       (targetCategory!=="F1"||getSuperLicensePoints(normalizeLicenseAwards(awards),d.licenseId??"driver:"+d.id)>=REQUIRED_SUPER_LICENSE_POINTS));
      const chosen=sameCategory.find(d=>points(d.id,targetSet.results)>0)
