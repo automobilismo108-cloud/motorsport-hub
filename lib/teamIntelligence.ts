@@ -27,7 +27,7 @@ export function getTeamSeasonAssessment(input:{teamId:string;teamName:string;cat
  const profile=getTeamDecisionProfile(input.teamId),ids=new Set(input.drivers.map(d=>d.id));
  const points=input.results.filter(r=>ids.has(r.driverId)).reduce((s,r)=>s+(Number(r.points)||0),0);
  const rounds=Math.max(1,input.roundsCompleted),averagePerRound=points/rounds;
- const ratings=input.drivers.map(d=>{const record=input.development[d.licenseId??d.id]??input.development[d.id];return record?((record.attributes.racePace+record.attributes.qualifying+record.attributes.overtaking+record.attributes.defending+record.attributes.consistency)/5):null;}).filter((v):v is number=>v!==null);
+ const records=input.drivers.map(d=>input.development[d.licenseId??d.id]??input.development[d.id]).filter((v):v is NonNullable<typeof v>=>!!v);\n const ratings=records.map(record=>(record.attributes.racePace+record.attributes.qualifying+record.attributes.overtaking+record.attributes.defending+record.attributes.consistency)/5);\n const averageAge=records.length?records.reduce((sum,record)=>sum+record.age,0)/records.length:null;
  const overall=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:null;
  const goal=profile.philosophy==="vencedora"?"Disputar vitórias e títulos":profile.philosophy==="formadora"?"Desenvolver jovens talentos":profile.philosophy==="reconstrucao"?"Construir uma base competitiva":profile.philosophy==="conservadora"?"Manter estabilidade e consistência":profile.philosophy==="agressiva"?"Buscar evolução e oportunidades": "Equilibrar resultados e desenvolvimento";
  const expected=input.category==="F1"?(profile.philosophy==="vencedora"?18:10):input.category==="F2"?12:8;
