@@ -11,12 +11,13 @@ type Driver={id:string;licenseId?:string;name:string;teamId:string;status?:strin
 type Team={id:string;name:string};
 type Race={id:number;round:number;name:string;status:string};
 type Result={id:number;raceId:number;driverId:string;position:number|null;points:number;status:string;session?:string};
+type TeamCrisisAction={category:"F1"|"F2"|"F3";teamId:string;teamName:string;releasedDriverId:string;replacementDriverId:string;reason:string;eventKey:string};
 type Agreement={id:string;eventKey:string;driverId:string;driverName:string;sourceCategory:"F1"|"F2"|"F3";sourceTeam:string;targetCategory:"F1"|"F2"|"F3";targetTeamId:string;targetTeam:string;type:"Pré-contrato"|"Renovação";signedSeason:number;effectiveSeason:number;duration:number;status:"Assinado"|"Concluído"|"Cancelado";reason:string};
 const KEY="workspace:driver-contracts:v1";
 const active=(d:Driver)=>d.status!=="Transferido"&&d.status!=="Aposentado";
 
-export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,development,onFreeAgentSigned}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;development:DriverDevelopmentState;onFreeAgentSigned:(ids:string[])=>void}){
- const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);
+export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,development,onFreeAgentSigned,onTeamCrisisAction}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;development:DriverDevelopmentState;onFreeAgentSigned:(ids:string[])=>void;onTeamCrisisAction:(actions:TeamCrisisAction[])=>void}){
+ const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);\n const [crisisDecisions,setCrisisDecisions,crisisReady,crisisError]=useCloudState<string[]>("workspace:team-ai-decisions:v1",[]);
  const [r1,,r1Ready,e1]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,[]);
  const [x1,,x1Ready,xe1]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
  const [r2,,r2Ready,e2]=useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,[]);
@@ -24,15 +25,38 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
  const [r3,,r3Ready,e3]=useCloudState<Race[]>(`championship:f3:${ACTIVE_SEASON}:races`,[]);
  const [x3,,x3Ready,xe3]=useCloudState<Result[]>(`championship:f3:${ACTIVE_SEASON}:results`,[]);
  useEffect(()=>{
-  if(!ready||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready||error||e1||xe1||e2||xe2||e3||xe3)return;
+  if(!ready||!crisisReady||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready||error||crisisError||e1||xe1||e2||xe2||e3||xe3)return;
   const current=[...agreements];
-  const add:Agreement[]=[];
+  const add:Agreement[]=[];\n  const crisisActions:TeamCrisisAction[]=[];\n  const newlyDecided:string[]=[];\n  const crisisFreeSigned:string[]=[];
   const sets=[
    {category:"F1" as const,drivers:f1.filter(active),teams:teams1,races:r1,results:x1},
    {category:"F2" as const,drivers:f2.filter(active),teams:teams2,races:r2,results:x2},
    {category:"F3" as const,drivers:f3.filter(active),teams:teams3,races:r3,results:x3}
   ];
   const points=(driverId:string,rows:Result[])=>rows.filter(r=>r.driverId===driverId).reduce((sum,r)=>sum+r.points,0);
+  // Resposta automática a crises: a cada quatro etapas, uma equipe em crise pode substituir seu piloto de pior desempenho por um agente livre.
+  for(const set of sets){
+   for(const race of set.races.filter(r=>r.status==="Concluída"&&r.round%4===0)){
+    for(const team of set.teams){
+     const eventKey="team-crisis-"+set.category+"-"+team.id+"-"+race.id;
+     if(crisisDecisions.includes(eventKey)||newlyDecided.includes(eventKey))continue;
+     const roster=set.drivers.filter(d=>d.teamId===team.id);
+     const assessment=getTeamSeasonAssessment({teamId:team.id,teamName:team.name,category:set.category,drivers:roster,results:set.results,development,roundsCompleted:set.races.filter(r=>r.status==="Concluída").length,season:ACTIVE_SEASON});
+     if(!assessment.crisis||roster.length===0){newlyDecided.push(eventKey);continue;}
+     const worst=[...roster].sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:points(a.id,set.results),bestPoints:Math.max(1,...roster.map(d=>points(d.id,set.results))),...(development[a.licenseId??a.id]?{potential:development[a.licenseId??a.id].potential,age:development[a.licenseId??a.id].age,attributes:development[a.licenseId??a.id].attributes}:{})})-scoreTeamCandidate({teamId:team.id,points:points(b.id,set.results),bestPoints:Math.max(1,...roster.map(d=>points(d.id,set.results))),...(development[b.licenseId??b.id]?{potential:development[b.licenseId??b.id].potential,age:development[b.licenseId??b.id].age,attributes:development[b.licenseId??b.id].attributes}:{})}))[0];
+     const candidates=freeAgents.filter(d=>!crisisFreeSigned.includes(d.id)&&!d.id.startsWith("free-agent:")).sort((a,b)=>scoreTeamCandidate({teamId:team.id,points:50,bestPoints:100,...(development[b.licenseId??b.id]?{potential:development[b.licenseId??b.id].potential,age:development[b.licenseId??b.id].age,attributes:development[b.licenseId??b.id].attributes}:{})})-scoreTeamCandidate({teamId:team.id,points:50,bestPoints:100,...(development[a.licenseId??a.id]?{potential:development[a.licenseId??a.id].potential,age:development[a.licenseId??a.id].age,attributes:development[a.licenseId??a.id].attributes}:{})}));
+     const replacement=candidates[0],weak=development[worst.licenseId??worst.id],prospect=replacement?development[replacement.licenseId??replacement.id]:undefined;
+     if(replacement&&(!weak||!prospect||prospect.potential>=weak.potential-5||getTeamDecisionProfile(team.id).riskTolerance>=.65)){
+      crisisActions.push({category:set.category,teamId:team.id,teamName:team.name,releasedDriverId:worst.id,replacementDriverId:replacement.id,reason:assessment.alert??"A equipe decidiu mudar sua formação após avaliação de desempenho.",eventKey});
+      crisisFreeSigned.push(replacement.id);
+     }
+     newlyDecided.push(eventKey);
+    }
+   }
+  }
+  if(crisisActions.length)onTeamCrisisAction(crisisActions);
+  if(newlyDecided.length)setCrisisDecisions(old=>Array.from(new Set([...old,...newlyDecided])));
+
   const already=(driverId:string)=>current.some(a=>a.driverId===driverId&&a.status==="Assinado")||add.some(a=>a.driverId===driverId);
   const make=(driver:Driver,source:"F1"|"F2"|"F3",target:"F1"|"F2"|"F3",team:Team,type:"Pré-contrato"|"Renovação",key:string,reason:string)=>{
    add.push({id:key,eventKey:key,driverId:driver.id,driverName:driver.name,sourceCategory:source,sourceTeam:sets.find(s=>s.category===source)?.teams.find(t=>t.id===driver.teamId)?.name??"Agente livre",targetCategory:target,targetTeamId:team.id,targetTeam:team.name,type,signedSeason:ACTIVE_SEASON,effectiveSeason:ACTIVE_SEASON+1,duration:2,status:"Assinado",reason});
@@ -103,9 +127,9 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
   }
   if(freeSigned.length)onFreeAgentSigned(freeSigned);
   if(add.length)setAgreements(old=>{const keys=new Set(old.map(a=>a.eventKey));const fresh=add.filter(a=>!keys.has(a.eventKey));return fresh.length?[...old,...fresh]:old;});
- },[ready,r1Ready,x1Ready,r2Ready,x2Ready,r3Ready,x3Ready,error,e1,xe1,e2,xe2,e3,xe3,agreements,r1,x1,r2,x2,r3,x3,f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,onFreeAgentSigned,setAgreements]);
- if(error||e1||xe1||e2||xe2||e3||xe3)return <div className="notice">Não foi possível sincronizar o mercado automático de contratos. Os dados existentes foram preservados.</div>;
- if(!ready||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready)return <div className="panel" style={{padding:20}}>Sincronizando decisões automáticas das equipes...</div>;
+ },[ready,crisisReady,r1Ready,x1Ready,r2Ready,x2Ready,r3Ready,x3Ready,error,crisisError,e1,xe1,e2,xe2,e3,xe3,agreements,crisisDecisions,r1,x1,r2,x2,r3,x3,f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,onFreeAgentSigned,onTeamCrisisAction,setAgreements,setCrisisDecisions]);
+ if(error||crisisError||e1||xe1||e2||xe2||e3||xe3)return <div className="notice">Não foi possível sincronizar o mercado automático de contratos. Os dados existentes foram preservados.</div>;
+ if(!ready||!crisisReady||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready)return <div className="panel" style={{padding:20}}>Sincronizando decisões automáticas das equipes...</div>;
  const ordered=[...agreements].sort((a,b)=>b.signedSeason-a.signedSeason||b.effectiveSeason-a.effectiveSeason);
  const roster=[
   ...f1.filter(active).map(d=>({...d,category:"F1" as const,teamName:teams1.find(t=>t.id===d.teamId)?.name??"Equipe não identificada"})),
