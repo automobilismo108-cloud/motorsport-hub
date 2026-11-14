@@ -41,6 +41,71 @@ function safeArray<T>(value: unknown, fallback: T[]): T[] {
   return Array.isArray(value) ? value as T[] : fallback;
 }
 
+function rollbackAutomaticCrisisChanges(state: TransferMarketState): TransferMarketState {
+  const releaseMoves = state.moves.filter(move =>
+    typeof move.category === "string" && move.category.includes("decisão automática por desempenho")
+  );
+  const signingMoves = state.moves.filter(move =>
+    typeof move.category === "string" && move.category.includes("contratação automática")
+  );
+  if (!releaseMoves.length || !signingMoves.length) return state;
+
+  const next: TransferMarketState = {
+    ...state,
+    f1: [...state.f1],
+    f2: [...state.f2],
+    f3: [...state.f3],
+    freeAgents: [...state.freeAgents],
+    moves: [...state.moves],
+  };
+  const categories = [next.f1, next.f2, next.f3];
+
+  for (const signing of signingMoves) {
+    const categoryIndex = signing.category?.startsWith("F1") ? 0 : signing.category?.startsWith("F2") ? 1 : 2;
+    const roster = categories[categoryIndex];
+    const replacementIndex = roster.findIndex(driver =>
+      driver.id.startsWith("team-ai-") && driver.name === signing.driver
+    );
+    if (replacementIndex < 0) continue;
+
+    const replacement = roster[replacementIndex];
+    const matchingRelease = releaseMoves.find(move =>
+      move.category?.startsWith(categoryIndex === 0 ? "F1" : categoryIndex === 1 ? "F2" : "F3") &&
+      move.from === signing.to
+    );
+    const releasedName = matchingRelease?.driver;
+    const releasedIndex = releasedName
+      ? roster.findIndex(driver => driver.name === releasedName && driver.teamId === replacement.teamId && driver.status === "Transferido")
+      : -1;
+
+    roster.splice(replacementIndex, 1);
+    const restoredReplacement: TransferDriver = {
+      ...replacement,
+      id: "free-restored-" + replacement.id,
+      teamId: "",
+      status: "Ativo",
+    };
+    if (!next.freeAgents.some(driver => driver.licenseId === restoredReplacement.licenseId || driver.name === restoredReplacement.name)) {
+      next.freeAgents.push(restoredReplacement);
+    }
+
+    if (releasedIndex >= 0) {
+      const released = roster[releasedIndex];
+      roster[releasedIndex] = {
+        ...released,
+        status: categoryIndex === 0 ? "Titular" : "Ativo",
+      };
+      next.freeAgents = next.freeAgents.filter(driver => driver.name !== released.name);
+    }
+  }
+
+  next.moves = next.moves.filter(move =>
+    !(typeof move.category === "string" &&
+      (move.category.includes("decisão automática por desempenho") || move.category.includes("contratação automática")))
+  );
+  return next;
+}
+
 export function useTransferMarketState(initial: TransferMarketState): [
   TransferMarketState,
   Dispatch<SetStateAction<TransferMarketState>>,
@@ -72,13 +137,21 @@ export function useTransferMarketState(initial: TransferMarketState): [
 
         if (current?.payload && typeof current.payload === "object") {
           const saved = current.payload as Partial<TransferMarketState>;
-          setState({
+          const loaded: TransferMarketState = {
             f1: safeArray(saved.f1, initial.f1),
             f2: safeArray(saved.f2, initial.f2),
             f3: safeArray(saved.f3, initial.f3),
             freeAgents: safeArray(saved.freeAgents, initial.freeAgents),
             moves: safeArray(saved.moves, initial.moves),
-          });
+          };
+          const restored = rollbackAutomaticCrisisChanges(loaded);
+          if (restored !== loaded) {
+            const { error: restoreError } = await supabase!
+              .from("workspace_data")
+              .upsert({ user_id: user.id, data_key: MARKET_KEY, payload: restored }, { onConflict: "user_id,data_key" });
+            if (restoreError) throw restoreError;
+          }
+          setState(restored);
         } else {
           const { data: legacyRows, error: legacyError } = await supabase!
             .from("workspace_data")
