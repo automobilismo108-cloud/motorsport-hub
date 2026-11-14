@@ -17,7 +17,8 @@ const KEY="workspace:driver-contracts:v1";
 const active=(d:Driver)=>d.status!=="Transferido"&&d.status!=="Aposentado";
 
 export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3,awards,development,onFreeAgentSigned,onTeamCrisisAction}:{f1:Driver[];f2:Driver[];f3:Driver[];freeAgents:Driver[];teams1:Team[];teams2:Team[];teams3:Team[];awards:unknown;development:DriverDevelopmentState;onFreeAgentSigned:(ids:string[])=>void;onTeamCrisisAction:(actions:TeamCrisisAction[])=>void}){
- const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);\n const [crisisDecisions,setCrisisDecisions,crisisReady,crisisError]=useCloudState<string[]>("workspace:team-ai-decisions:v1",[]);
+ const [agreements,setAgreements,ready,error]=useCloudState<Agreement[]>(KEY,[]);
+ const [crisisDecisions,setCrisisDecisions,crisisReady,crisisError]=useCloudState<string[]>("workspace:team-ai-decisions:v1",[]);
  const [r1,,r1Ready,e1]=useCloudState<Race[]>(`championship:f1:${ACTIVE_SEASON}:races`,[]);
  const [x1,,x1Ready,xe1]=useCloudState<Result[]>(`championship:f1:${ACTIVE_SEASON}:results`,[]);
  const [r2,,r2Ready,e2]=useCloudState<Race[]>(`championship:f2:${ACTIVE_SEASON}:races`,[]);
@@ -27,7 +28,10 @@ export default function ContractMarket({f1,f2,f3,freeAgents,teams1,teams2,teams3
  useEffect(()=>{
   if(!ready||!crisisReady||!r1Ready||!x1Ready||!r2Ready||!x2Ready||!r3Ready||!x3Ready||error||crisisError||e1||xe1||e2||xe2||e3||xe3)return;
   const current=[...agreements];
-  const add:Agreement[]=[];\n  const crisisActions:TeamCrisisAction[]=[];\n  const newlyDecided:string[]=[];\n  const crisisFreeSigned:string[]=[];
+  const add:Agreement[]=[];
+  const crisisActions:TeamCrisisAction[]=[];
+  const newlyDecided:string[]=[];
+  const crisisFreeSigned:string[]=[];
   const sets=[
    {category:"F1" as const,drivers:f1.filter(active),teams:teams1,races:r1,results:x1},
    {category:"F2" as const,drivers:f2.filter(active),teams:teams2,races:r2,results:x2},
